@@ -6,13 +6,13 @@
 //
 
 
-internal struct Edge: Equatable {
+public struct Edge: Equatable {
 
     internal let from: Node.ID
     
     internal let to: Node.ID
     
-    internal init(from: Node.ID, to: Node.ID) {
+    public init(from: Node.ID, to: Node.ID) {
         self.from = from
         self.to = to
     }

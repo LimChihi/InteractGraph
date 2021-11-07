@@ -6,11 +6,13 @@
 //
 
 
-internal struct Node: Identifiable, Equatable {
-
-    internal let id: UInt64
+public struct Node: Hashable {
     
-    internal init(id: UInt64) {
+    public typealias ID = UInt64
+
+    internal let id: ID
+    
+    public init(id: UInt64) {
         self.id = id
     }
     
