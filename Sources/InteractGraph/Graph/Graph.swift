@@ -15,33 +15,37 @@ public class Graph {
     
     private let strict: Bool
     
-    private var subgraphs: [Subgraph] {
-        didSet {
-            archiveIfNeed()
-        }
-    }
+    private var subgraphs: [Subgraph]
     
-    private var nodes: [Node] {
-        didSet {
-            archiveIfNeed()
-        }
-    }
-    
-    private var edges: [Edge] {
-        didSet {
-            archiveIfNeed()
-        }
-    }
+    internal private(set) var nodes: [Node]
     
     private var isArchiving: Bool
     
-    public init(directed: Bool = true, strict: Bool = true) {
+    
+    /// Creates a graph.
+    ///
+    /// `directed` and `strict` is not ready yep.
+    /// `directed` will always true
+    /// `strict` will always false
+    ///
+    /// - Parameters:
+    ///   - directed: Whether the graph is directed; `true by default`.
+    ///   - strict: Whether the graph is strict; `false` by default.
+    internal init(directed: Bool = true, strict: Bool = false) {
         self.id = UUID()
         self.directed = directed
         self.strict = strict
         self.subgraphs = []
         self.nodes = []
-        self.edges = []
+        self.isArchiving = false
+    }
+    
+    public init() {
+        self.id = UUID()
+        self.directed = true
+        self.strict = false
+        self.subgraphs = []
+        self.nodes = []
         self.isArchiving = false
     }
     
@@ -51,7 +55,6 @@ public class Graph {
         self.strict = instance.strict
         self.subgraphs = instance.subgraphs
         self.nodes = instance.nodes
-        self.edges = instance.edges
         self.isArchiving = instance.isArchiving
     }
     
@@ -62,23 +65,40 @@ public class Graph {
     public func addNode(_ node: Node) {
         precondition(!nodes.contains(node))
         nodes.append(node)
+        archiveIfNeed()
     }
     
     public func addNodes<S: Sequence>(_ nodes: S) where S.Element == Node {
         self.nodes.append(contentsOf: nodes)
         precondition(Set(self.nodes).count == self.nodes.count)
+        archiveIfNeed()
     }
     
     public func addEdge(_ edge: Edge) {
-        precondition(!checkEdgeLegitimacy(edge))
-        edges.append(edge)
+        guard edge.to != edge.from else {
+            preconditionFailure()
+        }
+        guard let (inputIndex, outputIndex) = nodeIndexOfEdge(edge) else {
+            preconditionFailure()
+        }
+        
+        if strict {
+            var duplicate = nodes[inputIndex].outputEdge.contains(where: { $0.to == edge.to })
+            if directed {
+                duplicate = duplicate || nodes[inputIndex].inputEdge.contains(where: { $0.from == edge.from })
+            }
+            precondition(!duplicate)
+        }
+        
+        nodes[inputIndex].outputEdge.append(OutputEdge(to: edge.to))
+        nodes[outputIndex].inputEdge.append(InputEdge(from: edge.from))
+        
+        
+        archiveIfNeed()
     }
     
     public func addEdges<S: Sequence>(_ edges: S) where S.Element == Edge {
-        precondition(!edges.reduce(true) { partialResult, next in
-            partialResult && checkEdgeLegitimacy(next)
-        })
-        self.edges.append(contentsOf: edges)
+        edges.forEach { addEdge($0) }
     }
     
     // MARK: Remove
@@ -88,6 +108,7 @@ public class Graph {
             preconditionFailure()
         }
         nodes.remove(at: index)
+        archiveIfNeed()
     }
     
     public func removeNodes<S: Sequence>(_ nodes: S) where S.Element == Node {
@@ -95,10 +116,17 @@ public class Graph {
     }
     
     public func removeEdge(_ edge: Edge) {
-        guard let index = edges.firstIndex (where: { edge == $0 }) else {
+        guard let (inputIndex, outputIndex) = nodeIndexOfEdge(edge) else {
             preconditionFailure()
         }
-        edges.remove(at: index)
+        guard let outputEdgeIndex = nodes[inputIndex].outputEdge.firstIndex(of: OutputEdge(to: edge.to)),
+              let inputEdgeIndex = nodes[outputIndex].inputEdge.firstIndex(of: InputEdge(from: edge.from)) else {
+                  preconditionFailure()
+              }
+        nodes[inputIndex].outputEdge.remove(at: outputEdgeIndex)
+        nodes[outputIndex].inputEdge.remove(at: inputEdgeIndex)
+        
+        archiveIfNeed()
     }
     
     public func removeEdges<S: Sequence>(_ edges: S) where S.Element == Edge {
@@ -126,23 +154,30 @@ public class Graph {
     }
     
     // MARK: - Helper
-
-    // MARK: Precondition checker
     
-    private func checkEdgeLegitimacy(_ edge: Edge) -> Bool {
-        guard edge.to != edge.from else {
-            return false
+    private func nodeIndexOfEdge(_ edge: Edge) -> (input: Int, output: Int)? {
+        var input: Int?
+        var output: Int?
+        for (index, node) in nodes.enumerated() {
+            if node.id == edge.from {
+                if let input = input {
+                    return (input, index)
+                } else {
+                    output = index
+                    continue
+                }
+            }
+            
+            if node.id == edge.to {
+                if let output = output {
+                    return (index, output)
+                } else {
+                    input = index
+                    continue
+                }
+            }
         }
-        guard strict else {
-            return true
-        }
-        
-        var result = edges.contains { edge.from == $0.from && edge.to == $0.to }
-        if !directed {
-            result = result || edges.contains { edge.from == $0.to && edge.to == $0.from }
-        }
-        
-        return result
+        return nil
     }
     
 }
