@@ -17,4 +17,9 @@ public struct Edge: Equatable {
         self.to = to
     }
     
+    public init(from fromNode: Node, to toNode: Node) {
+        self.from = fromNode.id
+        self.to = toNode.id
+    }
+    
 }

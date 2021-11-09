@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class Graph {
+public final class Graph {
     
     internal let id: UUID
     
@@ -83,17 +83,16 @@ public class Graph {
         }
         
         if strict {
-            var duplicate = nodes[inputIndex].outputEdge.contains(where: { $0.to == edge.to })
+            var duplicate = nodes[inputIndex].outputEdge.contains { $0.to == edge.to }
             if directed {
-                duplicate = duplicate || nodes[inputIndex].inputEdge.contains(where: { $0.from == edge.from })
+                duplicate = duplicate || nodes[inputIndex].inputEdge.contains { $0.from == edge.from }
             }
             precondition(!duplicate)
         }
         
-        nodes[inputIndex].outputEdge.append(OutputEdge(to: edge.to))
-        nodes[outputIndex].inputEdge.append(InputEdge(from: edge.from))
-        
-        
+        nodes[outputIndex].outputEdge.append(OutputEdge(to: edge.to))
+        nodes[inputIndex].inputEdge.append(InputEdge(from: edge.from))
+           
         archiveIfNeed()
     }
     
