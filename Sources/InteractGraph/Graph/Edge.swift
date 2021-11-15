@@ -6,7 +6,7 @@
 //
 
 
-public struct Edge: Equatable {
+public struct Edge: Hashable {
 
     internal let from: Node.ID
     
@@ -20,6 +20,14 @@ public struct Edge: Equatable {
     public init(from fromNode: Node, to toNode: Node) {
         self.from = fromNode.id
         self.to = toNode.id
+    }
+    
+}
+
+extension Edge: Identifiable {
+    
+    public var id: Self {
+        self
     }
     
 }
