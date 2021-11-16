@@ -12,15 +12,17 @@ extension Graph {
     internal typealias NodeLayer = [[Node]]
      
     internal func nodeLayering() -> NodeLayer {
-        var layoutGraph = longestPath(self)
-        adjustWeight(&layoutGraph)
+        var (layoutGraph, positions) = longestPath(self)
+        adjustWeight(&layoutGraph, positions: positions)
         return layoutGraph
     }
     
 }
 
 
-fileprivate func longestPath(_ graph: Graph) -> Graph.NodeLayer {
+fileprivate func longestPath(_ graph: Graph) -> (Graph.NodeLayer, [Node.ID: NodePosition]) {
+    
+    var positions: [Node.ID: NodePosition] = [:]
     
     var layoutGraph: Graph.NodeLayer = [[]]
     
@@ -33,30 +35,30 @@ fileprivate func longestPath(_ graph: Graph) -> Graph.NodeLayer {
         } else {
             layoutGraph[layoutGraph.endIndex - 1].append(node)
         }
+        positions[node.id] = NodePosition(rank: layoutGraph.endIndex - 1, level: layoutGraph[layoutGraph.endIndex - 1].endIndex - 1)
         node.outputEdge.forEach { currentOutputEdge.insert($0) }
     }
     
-    return layoutGraph
+    return (layoutGraph, positions)
 }
 
 
-fileprivate func adjustWeight(_ layoutGraph: inout Graph.NodeLayer) {
+fileprivate func adjustWeight(_ layoutGraph: inout Graph.NodeLayer, positions: [Node.ID: NodePosition]) {
     
-    for index in layoutGraph.indices {
-        guard index != 0 else {
+    for rankIndex in layoutGraph.indices {
+        guard rankIndex != 0 else {
             continue
         }
         
-        let lastRank = layoutGraph[index - 1]
-        let currentRank = layoutGraph[index]
+        let currentRank = layoutGraph[rankIndex]
 
-        layoutGraph[index] = currentRank
+        layoutGraph[rankIndex] = currentRank
             .enumerated()
-            .map { (index, node) in
+            .map { (levelIndex, node) in
                 let weight = node.inputEdge.reduce(0) { partialResult, input in
-                    partialResult + (lastRank.firstIndex { $0.id == input.from } ?? 0)
+                    partialResult + (positions[input.from]?.level ?? 0)
                 }
-                return (index, weight)
+                return (levelIndex, weight)
             }
             .sorted { $0.1 < $1.1 }
             .map { (i: Int, _: Int) -> Node in
