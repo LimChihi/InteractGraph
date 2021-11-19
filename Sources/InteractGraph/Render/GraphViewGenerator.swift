@@ -6,6 +6,7 @@
 //
 
 import Foundation
+/*
 
 public struct GraphViewGenerator {
     
@@ -55,3 +56,5 @@ fileprivate let nodeHeight: Double = 50
 
 fileprivate let rankGap: Double = rankHeight - nodeHeight
 fileprivate let levelGap: Double = levelWidth - nodeHeight
+
+ */
