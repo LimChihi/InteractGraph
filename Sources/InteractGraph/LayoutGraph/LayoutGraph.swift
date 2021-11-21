@@ -8,59 +8,50 @@
 
 internal struct LayoutGraph {
     
-    internal typealias Rank = [Level]
+    internal let storage: AdjacencyListGraph<Node>
     
-    internal typealias Level = Node
-    
-    internal let ranks: [Rank]
-    
-    internal let path: [Level.ID: Path]
+    internal let path: [Node.ID: LayoutGraphIndexPath]
     
     internal init(_ graph: Graph) {
         var (layoutGraph, path) = longestPath(graph)
         adjustEdgeWeight(&layoutGraph, path: &path)
-        self.ranks = layoutGraph
+        self.storage = layoutGraph
         self.path = path
-    }
-    
-    
-    internal struct Path {
-        
-        internal var rank: Int
-        
-        internal var level: Int
-        
     }
     
 }
 
 
-fileprivate func longestPath(_ graph: Graph) -> (layoutGraph: [LayoutGraph.Rank], path: [Node.ID: LayoutGraph.Path]) {
+fileprivate func longestPath(_ graph: Graph) -> (layoutGraph: AdjacencyListGraph<Node>, path: [Node.ID: LayoutGraphIndexPath]) {
     
-    var positions: [Node.ID: LayoutGraph.Path] = [:]
+    var path: [Node.ID: LayoutGraphIndexPath] = [:]
     
-    var layoutGraph: [LayoutGraph.Rank] = [[]]
+    var layoutGraph = AdjacencyListGraph<Node>(storage: [[]])
     
     var currentOutputEdge = Set<OutputEdge>()
     
     for node in graph.nodes {
+        
+        let indexPath: AdjacencyListIndexPath
         if currentOutputEdge.contains(where: { node.id == $0.to } ) {
-            layoutGraph.append([node])
+            indexPath = layoutGraph.appendElementAtNewRow(node)
             currentOutputEdge.removeAll()
         } else {
-            layoutGraph[layoutGraph.endIndex - 1].append(node)
+            indexPath = layoutGraph.appendElementAtLast(node)
         }
-        positions[node.id] = LayoutGraph.Path(rank: layoutGraph.endIndex - 1, level: layoutGraph[layoutGraph.endIndex - 1].endIndex - 1)
+        
+        
+        path[node.id] = LayoutGraphIndexPath(indexPath)
         node.outputEdge.forEach { currentOutputEdge.insert($0) }
     }
     
-    return (layoutGraph, positions)
+    return (layoutGraph, path)
 }
 
 
-fileprivate func adjustEdgeWeight(_ layoutGraph: inout [LayoutGraph.Rank], path: inout [Node.ID: LayoutGraph.Path]) {
+fileprivate func adjustEdgeWeight(_ layoutGraph: inout AdjacencyListGraph<Node>, path: inout [Node.ID: LayoutGraphIndexPath]) {
     
-    for rankIndex in layoutGraph.indices {
+    for rankIndex in layoutGraph.storage.indices {
         guard rankIndex != 0 else {
             continue
         }
@@ -79,7 +70,7 @@ fileprivate func adjustEdgeWeight(_ layoutGraph: inout [LayoutGraph.Rank], path:
             .map { (levelIndex: Int, arg1: (Int, Int)) -> Node in
                 let (i, _) = arg1
                 let node = currentRank[i]
-                path[node.id] = LayoutGraph.Path(rank: rankIndex, level: levelIndex)
+                path[node.id] = LayoutGraphIndexPath(rank: rankIndex, level: levelIndex)
                 return node
             }
     }
