@@ -25,7 +25,7 @@ internal struct AdjacencyListGraph<Element>: Collection {
     }
     
     internal var endIndex: Int {
-        storage.startIndex
+        storage.endIndex
     }
     
     internal subscript(indexPath: AdjacencyListIndexPath) -> Element {
@@ -66,10 +66,19 @@ internal struct AdjacencyListGraph<Element>: Collection {
         return IndexPath(row: storage.endIndex - 1, column: 0)
     }
     
-    internal func forEach(_ block: (Element) -> ()) {
-        storage.forEach { $0.forEach { block($0) }}
+    internal func forEach(_ block: (Element) throws -> ()) rethrows {
+        try storage.forEach { try $0.forEach { try block($0) }}
     }
     
+    internal func compactMap<T>(removeEmptyRow: Bool = true, _ transform: (Element) throws -> T?) rethrows -> AdjacencyListGraph<T> {
+        let newStorage = try storage.compactMap { elements -> [T]? in
+            let newRow = try elements.compactMap { try transform($0) }
+            return removeEmptyRow && newRow.isEmpty ? nil : newRow
+        }
+        
+        return AdjacencyListGraph<T>(storage: newStorage)
+    }
+ 
     internal func index(after i: Int) -> Int {
         i + 1
     }

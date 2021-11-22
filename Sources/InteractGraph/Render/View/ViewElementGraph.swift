@@ -21,16 +21,24 @@ internal struct ViewElementGraph {
         self.edgesControlPoints = controlPoints
     }
     
-    internal struct LevelElement {
+    internal struct LevelElement: Hashable, Identifiable {
         
         internal let element: Element
         
         internal var frame: CGRect
         
+        internal func hash(into hasher: inout Hasher) {
+            hasher.combine(element)
+        }
+        
+        var id: Self {
+            self
+        }
+        
     }
     
     
-    internal enum Element {
+    internal enum Element: Hashable {
         
         case node(Node)
         
@@ -171,8 +179,8 @@ fileprivate func calculateWidth(for node: Node) -> CGFloat {
 }
 
 
-fileprivate let nodeWidth: CGFloat = 50
-fileprivate let elementHeight: CGFloat = 50
+fileprivate let nodeWidth: CGFloat = 200
+fileprivate let elementHeight: CGFloat = 100
 
 fileprivate let edgeWidth: CGFloat = 10
 
