@@ -11,11 +11,14 @@ internal struct ViewElementGraph {
     
     internal let storage: AdjacencyListGraph<LevelElement>
     
+    internal let edgesControlPoints: [Edge: [CGPoint]]
+    
     internal init(_ graph: LayoutGraph) {
-        
         var storage = convertNodeToViewElement(graph)
         addEdgeElemetn(graph: &storage, nodePaths: graph.path)
+        let controlPoints = edgesControlPointsForGraph(storage)
         self.storage = storage
+        self.edgesControlPoints = controlPoints
     }
     
     internal struct LevelElement {
@@ -40,29 +43,32 @@ internal struct ViewElementGraph {
 }
 
 
-fileprivate func convertNodeToViewElement(_ graph: LayoutGraph) -> AdjacencyListGraph<ViewElementGraph.LevelElement> {
+fileprivate typealias LevelElement = ViewElementGraph.LevelElement
+
+fileprivate func convertNodeToViewElement(_ graph: LayoutGraph) -> AdjacencyListGraph<LevelElement> {
     
     var y: CGFloat = 0
     
-    let result: [[ViewElementGraph.LevelElement]] = graph.storage.map { level in
+    let result: [[LevelElement]] = graph.storage.map { level in
         var x: CGFloat = 0
         
-        let result: [ViewElementGraph.LevelElement] = level.map { node in
+        let result: [LevelElement] = level.map { node in
             let width = calculateWidth(for: .node(node))
-            x += width
             
-            return ViewElementGraph.LevelElement(element: .node(node), frame: CGRect(x: x, y: y, width: width, height: elementHeight))
+            let element = LevelElement(element: .node(node), frame: CGRect(x: x, y: y, width: width, height: elementHeight))
+            x += (width + levelGap)
+            return element
         }
         
         y += (elementHeight + rankGap)
         return result
     }
     
-    return AdjacencyListGraph<ViewElementGraph.LevelElement>(storage: result)
+    return AdjacencyListGraph<LevelElement>(storage: result)
 }
 
 
-fileprivate func addEdgeElemetn(graph: inout AdjacencyListGraph<ViewElementGraph.LevelElement>, nodePaths: [Node.ID: LayoutGraphIndexPath]) {
+fileprivate func addEdgeElemetn(graph: inout AdjacencyListGraph<LevelElement>, nodePaths: [Node.ID: LayoutGraphIndexPath]) {
     
     var nodePaths = nodePaths
     for rankIndex in graph.indices {
@@ -70,19 +76,21 @@ fileprivate func addEdgeElemetn(graph: inout AdjacencyListGraph<ViewElementGraph
             if case let .node(node) = graph[LayoutGraphIndexPath(rank: rankIndex, level: levelIndex)].element {
                 for outputEdge in node.outputEdge {
                     let edge = Edge(from: node.id, to: outputEdge.to)
-                    let newPaths = passByPaths(from: nodePaths[node.id]!, to: nodePaths[outputEdge.to]!, in: graph)
+                    let newPaths = edgePassByPaths(from: nodePaths[node.id]!, to: nodePaths[outputEdge.to]!, in: graph)
                     for path in newPaths {
-                        let x = graph[path.rank].count != 0 ? graph[path].frame.minX : 0
-                        let y = graph[path.rank].first!.frame.minY
+                        let preNodeFrame = graph[path.rank].count != path.level ? graph[path].frame : nil
+                        let x = preNodeFrame?.minX ?? (graph[path.rank].last!.frame.maxX + levelGap)
+                        let y = preNodeFrame?.minY ?? graph[path.rank].first!.frame.minY
                         let newFrame = CGRect(x: x, y: y, width: edgeWidth, height: elementHeight)
-                        graph[path.rank].insert(ViewElementGraph.LevelElement(element: .edge(edge), frame: newFrame), at: path.level)
+                        graph[path.rank].insert(LevelElement(element: .edge(edge), frame: newFrame), at: path.level)
                         
-                        if graph[path.rank].count > path.rank + 1 {
-                            for newlevelIndex in path.rank + 1..<graph[path.rank].endIndex {
-                                graph[path.rank][newlevelIndex].frame.origin.x += newFrame.origin.x
-                                if case let .node(node) = graph[path.rank][newlevelIndex].element {
-                                    nodePaths[node.id]?.level += 1
-                                }
+                        guard graph[path.rank].count > path.rank + 1 else {
+                            continue
+                        }
+                        for newlevelIndex in path.rank + 1..<graph[path.rank].endIndex {
+                            graph[path.rank][newlevelIndex].frame.origin.x += newFrame.origin.x
+                            if case let .node(node) = graph[path.rank][newlevelIndex].element {
+                                nodePaths[node.id]?.level += 1
                             }
                         }
                     }
@@ -93,7 +101,7 @@ fileprivate func addEdgeElemetn(graph: inout AdjacencyListGraph<ViewElementGraph
 }
 
 
-fileprivate func passByPaths(from fromNodePath: LayoutGraphIndexPath, to toNodePath: LayoutGraphIndexPath, in viewElementGraph: AdjacencyListGraph<ViewElementGraph.LevelElement>) -> [LayoutGraphIndexPath] {
+fileprivate func edgePassByPaths(from fromNodePath: LayoutGraphIndexPath, to toNodePath: LayoutGraphIndexPath, in viewElementGraph: AdjacencyListGraph<LevelElement>) -> [LayoutGraphIndexPath] {
     
     let rankDiff = abs(fromNodePath.rank - toNodePath.rank)
     guard rankDiff > 1 else {
@@ -131,6 +139,24 @@ fileprivate func passByPaths(from fromNodePath: LayoutGraphIndexPath, to toNodeP
     return passByPaths
 }
 
+fileprivate func edgesControlPointsForGraph(_ graph: AdjacencyListGraph<LevelElement>) -> [Edge: [CGPoint]] {
+    var result: [Edge: [CGPoint]] = [:]
+    
+    graph.forEach { levelElement in
+        guard case .edge(let edge) = levelElement.element else {
+            return
+        }
+        let point = levelElement.frame.center
+        if result.keys.contains(edge) {
+            result[edge]?.append(point)
+        } else {
+            result[edge] = [point]
+        }
+    }
+
+    return result
+}
+
 fileprivate func calculateWidth(for element: ViewElementGraph.Element) -> CGFloat {
     switch element {
     case .node(let node):
@@ -145,10 +171,10 @@ fileprivate func calculateWidth(for node: Node) -> CGFloat {
 }
 
 
-fileprivate let nodeWidth: Double = 50
-fileprivate let elementHeight: Double = 50
+fileprivate let nodeWidth: CGFloat = 50
+fileprivate let elementHeight: CGFloat = 50
 
-fileprivate let edgeWidth: Double = 10
+fileprivate let edgeWidth: CGFloat = 10
 
-fileprivate let rankGap: Double = 50
-fileprivate let levelGap: Double = 50
+fileprivate let rankGap: CGFloat = 50
+fileprivate let levelGap: CGFloat = 50

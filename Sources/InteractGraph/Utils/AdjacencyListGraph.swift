@@ -66,6 +66,10 @@ internal struct AdjacencyListGraph<Element>: Collection {
         return IndexPath(row: storage.endIndex - 1, column: 0)
     }
     
+    internal func forEach(_ block: (Element) -> ()) {
+        storage.forEach { $0.forEach { block($0) }}
+    }
+    
     internal func index(after i: Int) -> Int {
         i + 1
     }
