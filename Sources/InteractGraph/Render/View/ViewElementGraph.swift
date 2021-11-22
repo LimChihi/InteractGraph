@@ -11,13 +11,17 @@ internal struct ViewElementGraph {
     
     internal let storage: AdjacencyListGraph<LevelElement>
     
+    internal let edges: [Edge]
+    
     internal let edgesControlPoints: [Edge: [CGPoint]]
     
     internal init(_ graph: LayoutGraph) {
+        let edges = getEdges(graph)
         var storage = convertNodeToViewElement(graph)
         addEdgeElemetn(graph: &storage, nodePaths: graph.path)
         let controlPoints = edgesControlPointsForGraph(storage)
         self.storage = storage
+        self.edges = edges
         self.edgesControlPoints = controlPoints
     }
     
@@ -52,6 +56,18 @@ internal struct ViewElementGraph {
 
 
 fileprivate typealias LevelElement = ViewElementGraph.LevelElement
+
+fileprivate func getEdges(_ graph: LayoutGraph) -> [Edge] {
+    let edges = graph.storage.flatMap { node in
+        node.outputEdge.map {
+            Edge(from: node.id, to: $0.to)
+        }
+    }
+    
+    return edges.reduce([]) { partialResult, next in
+        partialResult + next
+    }
+}
 
 fileprivate func convertNodeToViewElement(_ graph: LayoutGraph) -> AdjacencyListGraph<LevelElement> {
     
@@ -150,7 +166,7 @@ fileprivate func edgePassByPaths(from fromNodePath: LayoutGraphIndexPath, to toN
 fileprivate func edgesControlPointsForGraph(_ graph: AdjacencyListGraph<LevelElement>) -> [Edge: [CGPoint]] {
     var result: [Edge: [CGPoint]] = [:]
     
-    graph.forEach { levelElement in
+    graph.flatForEach { levelElement in
         guard case .edge(let edge) = levelElement.element else {
             return
         }
