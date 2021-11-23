@@ -34,11 +34,13 @@ internal struct GraphNodeView: View {
                                 switch item.element {
                                 case .node(let node):
                                     EllipseLabelView(label: "nodeInde: \(node.id)")
-                                case .edge:
+                                        .preference(key: ElementFramesKey.self, value: [.node(node): reader.frame(in: coordinateSpace)])
+                                case .edge(let edge):
                                     Spacer()
+                                        .preference(key: ElementFramesKey.self, value: [.edge(edge: edge, rank: rankIndex): reader.frame(in: coordinateSpace)])
+
                                 }
                             }
-                            .preference(key: ElementFramesKey.self, value: [item.element: reader.frame(in: coordinateSpace)])
                         }
                         .frame(width: item.frame.width, height: item.frame.height)
                     }
@@ -48,17 +50,47 @@ internal struct GraphNodeView: View {
     }
 }
 
+internal enum GraphNodeViewElement: Hashable {
+    
+    case node(Node)
+    
+    case edge(edge: Edge, rank: Int)
+    
+}
+
 internal struct ElementFramesKey: PreferenceKey {
 
-    typealias Value = [ViewElementGraph.Element: CGRect]
+    typealias Value = [GraphNodeViewElement: CGRect]
     
-    static let defaultValue: [ViewElementGraph.Element : CGRect] = [:]
+    static let defaultValue: [GraphNodeViewElement : CGRect] = [:]
     
-    static func reduce(value: inout [ViewElementGraph.Element : CGRect], nextValue: () -> [ViewElementGraph.Element : CGRect]) {
+    static func reduce(value: inout [GraphNodeViewElement : CGRect], nextValue: () -> [GraphNodeViewElement : CGRect]) {
         value.merge(nextValue()) { $1 }
     }
     
 }
+
+
+extension Dictionary where Key == GraphNodeViewElement, Value == CGRect {
+    
+    internal func edgeFrames(_ edge: Edge) -> [CGRect] {
+        compactMap { key, value -> (CGRect, Int)? in
+            guard case .edge(let caseEdge, let rank) = key else {
+                return nil
+            }
+            guard caseEdge == edge else {
+                return nil
+            }
+            
+            return (value, rank)
+        }.sorted { lhs, rhs in
+            lhs.1 > rhs.1
+        }.map { value, _ in
+            value
+        }
+    }
+}
+
 
 struct GraphNodeView_Previews: PreviewProvider {
     

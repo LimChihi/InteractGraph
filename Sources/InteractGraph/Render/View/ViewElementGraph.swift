@@ -13,16 +13,12 @@ internal struct ViewElementGraph {
     
     internal let edges: [Edge]
     
-    internal let edgesControlPoints: [Edge: [CGPoint]]
-    
     internal init(_ graph: LayoutGraph) {
         let edges = getEdges(graph)
         var storage = convertNodeToViewElement(graph)
         addEdgeElemetn(graph: &storage, nodePaths: graph.path)
-        let controlPoints = edgesControlPointsForGraph(storage)
         self.storage = storage
         self.edges = edges
-        self.edgesControlPoints = controlPoints
     }
     
     internal struct LevelElement: Hashable, Identifiable {
@@ -145,7 +141,7 @@ fileprivate func edgePassByPaths(from fromNodePath: LayoutGraphIndexPath, to toN
     passByPaths.reserveCapacity(rankDiff)
     let minRank = min(fromNodePath.rank, toNodePath.rank)
     
-    for rankIndex in minRank..<(minRank + rankDiff) {
+    for rankIndex in minRank + 1..<(minRank + rankDiff) {
         
         let y = Double(rankIndex) * (elementHeight + rankGap) + elementHeight / 2
         let x = (y - b) / k
@@ -163,23 +159,6 @@ fileprivate func edgePassByPaths(from fromNodePath: LayoutGraphIndexPath, to toN
     return passByPaths
 }
 
-fileprivate func edgesControlPointsForGraph(_ graph: AdjacencyListGraph<LevelElement>) -> [Edge: [CGPoint]] {
-    var result: [Edge: [CGPoint]] = [:]
-    
-    graph.flatForEach { levelElement in
-        guard case .edge(let edge) = levelElement.element else {
-            return
-        }
-        let point = levelElement.frame.center
-        if result.keys.contains(edge) {
-            result[edge]?.append(point)
-        } else {
-            result[edge] = [point]
-        }
-    }
-
-    return result
-}
 
 fileprivate func calculateWidth(for element: ViewElementGraph.Element) -> CGFloat {
     switch element {
