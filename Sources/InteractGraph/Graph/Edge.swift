@@ -6,7 +6,7 @@
 //
 
 
-public struct Edge: Hashable {
+public struct Edge: Hashable, CustomStringConvertible {
 
     internal let from: Node.ID
     
@@ -20,6 +20,10 @@ public struct Edge: Hashable {
     public init(from fromNode: Node, to toNode: Node) {
         self.from = fromNode.id
         self.to = toNode.id
+    }
+    
+    public var description: String {
+        "Edge: [\(from) -> \(to)]"
     }
     
 }
