@@ -131,11 +131,7 @@ fileprivate func edgePassByPaths(from fromNodePath: LayoutGraphIndexPath, to toN
     let fromNodeCenter = viewElementGraph[fromNodePath.rank][fromNodePath.level].frame.center
     let toNodeCenter = viewElementGraph[toNodePath.rank][toNodePath.level].frame.center
     
-    // y = kx + b
-    //k = (y1 - y2) / (x1 - x2)
-    let k = (fromNodeCenter.y - toNodeCenter.y) / Double(fromNodeCenter.x - toNodeCenter.x)
-    // b = y - kx
-    let b = fromNodeCenter.y - k * fromNodeCenter.x
+    let (k, b) = fromNodeCenter.slopeFormula(toNodeCenter)
     
     var passByPaths: [LayoutGraphIndexPath] = []
     passByPaths.reserveCapacity(rankDiff)
@@ -177,7 +173,7 @@ fileprivate func calculateWidth(for node: Node) -> CGFloat {
 fileprivate let nodeWidth: CGFloat = 200
 fileprivate let elementHeight: CGFloat = 100
 
-fileprivate let edgeWidth: CGFloat = 10
+fileprivate let edgeWidth: CGFloat = 35
 
 fileprivate let rankGap: CGFloat = 50
 fileprivate let levelGap: CGFloat = 50

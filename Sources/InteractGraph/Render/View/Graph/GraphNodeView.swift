@@ -30,16 +30,14 @@ internal struct GraphNodeView: View {
                 LazyHStack(spacing: levelGap) {
                     ForEach(graph[rankIndex]) { item in
                         GeometryReader { reader in
-                            Group {
-                                switch item.element {
-                                case .node(let node):
-                                    EllipseLabelView(label: "nodeInde: \(node.id)")
-                                        .preference(key: ElementFramesKey.self, value: [.node(node): reader.frame(in: coordinateSpace)])
-                                case .edge(let edge):
-                                    Spacer()
-                                        .preference(key: ElementFramesKey.self, value: [.edge(edge: edge, rank: rankIndex): reader.frame(in: coordinateSpace)])
-
-                                }
+                            switch item.element {
+                            case .node(let node):
+                                EllipseLabelView(label: "nodeInde: \(node.id)")
+                                    .preference(key: ElementFramesKey.self, value: [.node(node): reader.frame(in: coordinateSpace)])
+                            case .edge(let edge):
+                                Spacer()
+                                    .preference(key: ElementFramesKey.self, value: [.edge(edge: edge, rank: rankIndex): reader.frame(in: coordinateSpace)])
+                                
                             }
                         }
                         .frame(width: item.frame.width, height: item.frame.height)

@@ -25,16 +25,17 @@ public struct GraphView: View {
     
     public var body: some View {
         ZStack {
+
+            GraphNodeView(graph: graph.storage, coordinateSpace: .named(coordinateSpaceName), rankGap: 50, levelGap: 50)
+                .onPreferenceChange(ElementFramesKey.self) { newValue in
+                    elementFrames = newValue
+                }
             ForEach(graph.edges) { edge in
                 if let origin = elementFrames[.node(Node(id: edge.from))]?.bottomCenter,
                    let destination = elementFrames[.node(Node(id: edge.to))]?.topCenter {
                     EdgePathView(origin: origin, destination: destination, controlPoints: elementFrames.edgeFrames(edge).map { $0.center})
                 }
             }
-            GraphNodeView(graph: graph.storage, coordinateSpace: .named(coordinateSpaceName), rankGap: 50, levelGap: 50)
-                .onPreferenceChange(ElementFramesKey.self) { newValue in
-                    elementFrames = newValue
-                }
         }
         .coordinateSpace(name: coordinateSpaceName)
     }
