@@ -60,9 +60,9 @@ internal struct ElementFramesKey: PreferenceKey {
 
     typealias Value = [GraphNodeViewElement: CGRect]
     
-    static let defaultValue: [GraphNodeViewElement : CGRect] = [:]
+    static let defaultValue: [GraphNodeViewElement: CGRect] = [:]
     
-    static func reduce(value: inout [GraphNodeViewElement : CGRect], nextValue: () -> [GraphNodeViewElement : CGRect]) {
+    static func reduce(value: inout [GraphNodeViewElement: CGRect], nextValue: () -> [GraphNodeViewElement: CGRect]) {
         value.merge(nextValue()) { $1 }
     }
     

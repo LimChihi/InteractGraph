@@ -24,16 +24,14 @@ internal struct EdgePathView: View {
     internal var body: some View {
         Path { path in
             path.move(to: origin)
-            let points = (destination.y > origin.y ? controlPoints : controlPoints.reversed())
-            
-            for index in points.indices {
-                guard (2 * index + 1) < points.endIndex else {
+            for index in controlPoints.indices {
+                guard (2 * index + 1) < controlPoints.endIndex else {
                     break
                 }
-                path.addQuadCurve(to: points[2 * index + 1], control: points[2 * index])
+                path.addQuadCurve(to: controlPoints[2 * index + 1], control: controlPoints[2 * index])
             }
-            if points.count % 2 != 0 {
-                path.addQuadCurve(to: destination, control: points.last!)
+            if controlPoints.count % 2 != 0 {
+                path.addQuadCurve(to: destination, control: controlPoints.last!)
             }
             
             path.addLine(to: destination)
@@ -41,14 +39,24 @@ internal struct EdgePathView: View {
             // Arraw
             // https://stackoverflow.com/questions/48625763/how-to-draw-a-directional-arrow-head
             
-            let origin = points.last ?? self.origin
+            let origin = controlPoints.last ?? self.origin
             
             let pointerLineLength: CGFloat = 10
-            let arrowAngle =  (Double.pi / 6)
+            let arrowAngle =  (CGFloat.pi / 6)
             
-            let startEndAngle = atan((destination.y - origin.y) / (destination.x - origin.x)) + ((destination.x - origin.x) < 0 ? CGFloat(Double.pi) : 0)
-            let arrowLine1 = CGPoint(x: destination.x + pointerLineLength * cos(.pi - startEndAngle + arrowAngle), y: destination.y - pointerLineLength * sin(CGFloat(Double.pi) - startEndAngle + arrowAngle))
-            let arrowLine2 = CGPoint(x: destination.x + pointerLineLength * cos(CGFloat(Double.pi) - startEndAngle - arrowAngle), y: destination.y - pointerLineLength * sin(CGFloat(Double.pi) - startEndAngle - arrowAngle))
+            let startEndAngle = destination.angleOfInclination(origin) + ((destination.x - origin.x) < 0 ? .pi : 0)
+            
+            let angle1 = .pi - startEndAngle + arrowAngle
+            let arrowLine1 = CGPoint(
+                x: destination.x + pointerLineLength * cos(angle1),
+                y: destination.y - pointerLineLength * sin(angle1)
+            )
+            
+            let angle2 = .pi - startEndAngle - arrowAngle
+            let arrowLine2 = CGPoint(
+                x: destination.x + pointerLineLength * cos(angle2),
+                y: destination.y - pointerLineLength * sin(angle2)
+            )
             
             path.move(to: arrowLine1)
             path.addLine(to: destination)

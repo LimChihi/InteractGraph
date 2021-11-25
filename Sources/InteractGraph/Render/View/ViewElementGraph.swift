@@ -173,7 +173,7 @@ fileprivate func calculateWidth(for node: Node) -> CGFloat {
 fileprivate let nodeWidth: CGFloat = 200
 fileprivate let elementHeight: CGFloat = 100
 
-fileprivate let edgeWidth: CGFloat = 35
+fileprivate let edgeWidth: CGFloat = 15
 
 fileprivate let rankGap: CGFloat = 50
 fileprivate let levelGap: CGFloat = 50
