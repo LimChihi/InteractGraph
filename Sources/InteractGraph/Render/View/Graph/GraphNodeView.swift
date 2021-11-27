@@ -35,7 +35,7 @@ internal struct GraphNodeView: View {
                         GeometryReader { reader in
                             switch item.element {
                             case .node(let node):
-                                EllipseLabelView(label: "nodeInde: \(node.id)")
+                                EllipseLabelView(label: node.attribute.label)
                                     .preference(
                                         key: ElementFramesKey.self,
                                         value: [.node(node): reader.frame(in: coordinateSpace)])
@@ -101,12 +101,12 @@ struct GraphNodeView_Previews: PreviewProvider {
     static var data: AdjacencyListGraph<ViewElementGraph.ViewElement> {
         let graph = Graph()
         
-        let node0 = Node(id: 0x0)
-        let node1 = Node(id: 0x1)
-        let node2 = Node(id: 0x2)
-        let node3 = Node(id: 0x3)
-        let node4 = Node(id: 0x4)
-        let node5 = Node(id: 0x5)
+        let node0 = Node(id: 0x0, label: "nodeIndex: 0x0")
+        let node1 = Node(id: 0x1, label: "nodeIndex: 0x1")
+        let node2 = Node(id: 0x2, label: "nodeIndex: 0x2")
+        let node3 = Node(id: 0x3, label: "nodeIndex: 0x3")
+        let node4 = Node(id: 0x4, label: "nodeIndex: 0x4")
+        let node5 = Node(id: 0x5, label: "nodeIndex: 0x5")
         
         let edge0 = Edge(from: node0, to: node1)
         let edge1 = Edge(from: node0, to: node2)

@@ -70,7 +70,7 @@ fileprivate func filter(_ graph: Graph, focusNodeID: Node.ID) -> Graph {
     
     // inputs
     while let node = stack.popLast() {
-        releatedNodes.insert(Node(id: node.id))
+        releatedNodes.insert(Node(id: node.id, attribute: node.attribute))
         
         for input in node.inputEdge {
             guard !releatedNodes.contains(where: { $0.id == input.from}) &&
@@ -88,7 +88,7 @@ fileprivate func filter(_ graph: Graph, focusNodeID: Node.ID) -> Graph {
     // outputs
     stack = [focusNode]
     while let node = stack.popLast() {
-        releatedNodes.insert(Node(id: node.id))
+        releatedNodes.insert(Node(id: node.id, attribute: node.attribute))
 
         for output in node.outputEdge {
             guard !releatedNodes.contains(where: { $0.id == output.to}) &&

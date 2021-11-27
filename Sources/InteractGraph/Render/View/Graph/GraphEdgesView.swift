@@ -18,8 +18,7 @@ internal struct GraphEdgesView: View {
         self.elementFrames = elementFrames
     }
     
-    
-    var body: some View {
+    internal var body: some View {
         ForEach(edges) { edge in
             if let originNode = elementFrames[.node(Node(id: edge.from))],
                let destinationNode = elementFrames[.node(Node(id: edge.to))] {
