@@ -9,7 +9,7 @@ import CoreGraphics
 
 internal struct ViewElementGraph {
     
-    internal let storage: AdjacencyListGraph<LevelElement>
+    internal private(set) var storage: AdjacencyListGraph<ViewElement>
     
     internal let edges: [Edge]
     
@@ -21,7 +21,7 @@ internal struct ViewElementGraph {
         self.edges = edges
     }
     
-    internal struct LevelElement: Hashable, Identifiable {
+    internal struct ViewElement: Hashable, Identifiable {
         
         internal let element: Element
         
@@ -35,23 +35,22 @@ internal struct ViewElementGraph {
             self
         }
         
-    }
-    
-    
-    internal enum Element: Hashable {
-        
-        case node(Node)
-        
-        case edge(Edge)
-        
-//        case gap
+        internal enum Element: Hashable {
+            
+            case node(Node)
+            
+            case edge(Edge)
+            
+//            case gap
+            
+        }
         
     }
     
 }
 
 
-fileprivate typealias LevelElement = ViewElementGraph.LevelElement
+fileprivate typealias LevelElement = ViewElementGraph.ViewElement
 
 fileprivate func getEdges(_ graph: LayoutGraph) -> [Edge] {
     let edges = graph.storage.flatMap { node in
@@ -75,7 +74,10 @@ fileprivate func convertNodeToViewElement(_ graph: LayoutGraph) -> AdjacencyList
         let result: [LevelElement] = level.map { node in
             let width = calculateWidth(for: .node(node))
             
-            let element = LevelElement(element: .node(node), frame: CGRect(x: x, y: y, width: width, height: elementHeight))
+            let element = LevelElement(
+                element: .node(node),
+                frame: CGRect(x: x, y: y, width: width, height: elementHeight))
+            
             x += (width + levelGap)
             return element
         }
@@ -84,7 +86,7 @@ fileprivate func convertNodeToViewElement(_ graph: LayoutGraph) -> AdjacencyList
         return result
     }
     
-    return AdjacencyListGraph<LevelElement>(storage: result)
+    return AdjacencyListGraph<LevelElement>(result)
 }
 
 
@@ -156,7 +158,7 @@ fileprivate func edgePassByPaths(from fromNodePath: LayoutGraphIndexPath, to toN
 }
 
 
-fileprivate func calculateWidth(for element: ViewElementGraph.Element) -> CGFloat {
+fileprivate func calculateWidth(for element: ViewElementGraph.ViewElement.Element) -> CGFloat {
     switch element {
     case .node(let node):
         return calculateWidth(for: node)

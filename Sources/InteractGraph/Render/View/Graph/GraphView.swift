@@ -11,6 +11,8 @@ public struct GraphView: View {
     
     private let graph: ViewElementGraph
     
+    private let onTapNode: (ViewElementGraph.ViewElement) -> ()
+    
     @State
     private var elementFrames: ElementFramesKey.Value = [:]
     
@@ -18,15 +20,21 @@ public struct GraphView: View {
         let layoutGraph = LayoutGraph(graph)
         let viewElementGraph = ViewElementGraph(layoutGraph)
         self.graph = viewElementGraph
+        self.onTapNode = { _ in }
+    }
+    
+    internal init(graph: ViewElementGraph, onTapNode: @escaping (ViewElementGraph.ViewElement) -> ()) {
+        self.graph = graph
+        self.onTapNode = onTapNode
     }
     
     public var body: some View {
         ZStack {
-            GraphNodeView(graph: graph.storage, coordinateSpace: .named(coordinateSpaceName), rankGap: 50, levelGap: 50)
-                .onPreferenceChange(ElementFramesKey.self) { newValue in
-                    elementFrames = newValue
-                }
+            GraphNodeView(graph: graph.storage, coordinateSpace: .named(coordinateSpaceName), rankGap: 50, levelGap: 50, onTapNode: onTapNode)
             GraphEdgesView(edges: graph.edges, elementFrames: elementFrames)
+        }
+        .onPreferenceChange(ElementFramesKey.self) { newValue in
+            elementFrames = newValue
         }
         .coordinateSpace(name: coordinateSpaceName)
     }

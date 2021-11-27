@@ -63,14 +63,14 @@ public final class Graph {
     // MARK: Add
     
     public func addNode(_ node: Node) {
-        precondition(!nodes.contains(node))
+        assert(!nodes.contains(node))
         nodes.append(node)
         archiveIfNeed()
     }
     
     public func addNodes<S: Sequence>(_ nodes: S) where S.Element == Node {
         self.nodes.append(contentsOf: nodes)
-        precondition(Set(self.nodes).count == self.nodes.count)
+        assert(Set(self.nodes).count == self.nodes.count)
         archiveIfNeed()
     }
     
@@ -79,7 +79,8 @@ public final class Graph {
             preconditionFailure()
         }
         guard let (inputIndex, outputIndex) = nodeIndexOfEdge(edge) else {
-            preconditionFailure()
+            assertionFailure()
+            return
         }
         
         if strict {
@@ -98,6 +99,12 @@ public final class Graph {
     
     public func addEdges<S: Sequence>(_ edges: S) where S.Element == Edge {
         edges.forEach { addEdge($0) }
+    }
+    
+    // MARK: Read
+    
+    public func node(id: Node.ID) -> Node? {
+        nodes.first { $0.id == id }
     }
     
     // MARK: Remove

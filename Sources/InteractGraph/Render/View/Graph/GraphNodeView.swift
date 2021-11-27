@@ -9,7 +9,7 @@ import SwiftUI
 
 internal struct GraphNodeView: View {
 
-    private let graph: AdjacencyListGraph<ViewElementGraph.LevelElement>
+    private let graph: AdjacencyListGraph<ViewElementGraph.ViewElement>
     
     private let coordinateSpace: CoordinateSpace
     
@@ -17,27 +17,36 @@ internal struct GraphNodeView: View {
     
     private let levelGap: CGFloat
     
-    internal init(graph: AdjacencyListGraph<ViewElementGraph.LevelElement>, coordinateSpace: CoordinateSpace, rankGap: CGFloat, levelGap: CGFloat) {
+    private let onTapNode: (ViewElementGraph.ViewElement) -> ()
+    
+    internal init(graph: AdjacencyListGraph<ViewElementGraph.ViewElement>, coordinateSpace: CoordinateSpace, rankGap: CGFloat, levelGap: CGFloat, onTapNode: @escaping (ViewElementGraph.ViewElement) -> ()) {
         self.graph = graph
         self.coordinateSpace = coordinateSpace
         self.rankGap = rankGap
         self.levelGap = levelGap
+        self.onTapNode = onTapNode
     }
     
     var body: some View {
         LazyVStack(spacing: rankGap) {
-            ForEach(graph.storage.indices) { rankIndex in
+            ForEach(graph.storage) { rank in
                 LazyHStack(spacing: levelGap) {
-                    ForEach(graph[rankIndex]) { item in
+                    ForEach(rank) { item in
                         GeometryReader { reader in
                             switch item.element {
                             case .node(let node):
                                 EllipseLabelView(label: "nodeInde: \(node.id)")
-                                    .preference(key: ElementFramesKey.self, value: [.node(node): reader.frame(in: coordinateSpace)])
+                                    .preference(
+                                        key: ElementFramesKey.self,
+                                        value: [.node(node): reader.frame(in: coordinateSpace)])
+                                    .onTapGesture {
+                                        onTapNode(item)
+                                    }
                             case .edge(let edge):
                                 Spacer()
-                                    .preference(key: ElementFramesKey.self, value: [.edge(edge: edge, rank: rankIndex): reader.frame(in: coordinateSpace)])
-                                
+                                    .preference(
+                                        key: ElementFramesKey.self,
+                                        value: [.edge(edge: edge): reader.frame(in: coordinateSpace)])
                             }
                         }
                         .frame(width: item.frame.width, height: item.frame.height)
@@ -52,7 +61,7 @@ internal enum GraphNodeViewElement: Hashable {
     
     case node(Node)
     
-    case edge(edge: Edge, rank: Int)
+    case edge(edge: Edge)
     
 }
 
@@ -72,27 +81,24 @@ internal struct ElementFramesKey: PreferenceKey {
 extension Dictionary where Key == GraphNodeViewElement, Value == CGRect {
     
     internal func edgeFrames(_ edge: Edge) -> [CGRect] {
-        compactMap { key, value -> (CGRect, Int)? in
-            guard case .edge(let caseEdge, let rank) = key else {
+        compactMap { key, value in
+            guard case .edge(let caseEdge) = key else {
                 return nil
             }
             guard caseEdge == edge else {
                 return nil
             }
             
-            return (value, rank)
-        }.sorted { lhs, rhs in
-            lhs.1 > rhs.1
-        }.map { value, _ in
-            value
+            return value
         }
+        .sorted { $0.minY > $1.minY }
     }
 }
 
 
 struct GraphNodeView_Previews: PreviewProvider {
     
-    static var data: AdjacencyListGraph<ViewElementGraph.LevelElement> {
+    static var data: AdjacencyListGraph<ViewElementGraph.ViewElement> {
         let graph = Graph()
         
         let node0 = Node(id: 0x0)
@@ -117,7 +123,7 @@ struct GraphNodeView_Previews: PreviewProvider {
     }
     
     static var previews: some View {
-        GraphNodeView(graph: data, coordinateSpace: .local, rankGap: 50, levelGap: 50)
+        GraphNodeView(graph: data, coordinateSpace: .local, rankGap: 50, levelGap: 50, onTapNode: { _ in })
             .frame(width: 600, height: 600)
     }
 }

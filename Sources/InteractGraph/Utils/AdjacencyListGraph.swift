@@ -17,8 +17,14 @@ internal protocol AdjacencyListIndexPath {
 }
 
 internal struct AdjacencyListGraph<Element>: Collection {
+    
+    internal typealias Row = [Element]
 
-    internal var storage: [[Element]]
+    internal private(set) var storage: [Row]
+    
+    internal init(_ storage: [[Element]]) {
+        self.storage = storage
+    }
     
     internal var startIndex: Int {
         storage.startIndex
@@ -66,6 +72,14 @@ internal struct AdjacencyListGraph<Element>: Collection {
         return IndexPath(row: storage.endIndex - 1, column: 0)
     }
     
+    internal mutating func forEachUpdate(_ body: (inout Element) throws -> ()) rethrows {
+        for row in storage.indices {
+            for column in storage[row].indices {
+                try body(&storage[row][column])
+            }
+        }
+    }
+    
     @discardableResult
     internal mutating func remove(at indexPath: IndexPath) -> Element {
         storage[indexPath.row].remove(at: indexPath.column)
@@ -101,9 +115,8 @@ internal struct AdjacencyListGraph<Element>: Collection {
             return removeEmptyRow && newRow.isEmpty ? nil : newRow
         }
         
-        return AdjacencyListGraph<T>(storage: newStorage)
+        return AdjacencyListGraph<T>(newStorage)
     }
-
  
     internal func index(after i: Int) -> Int {
         i + 1

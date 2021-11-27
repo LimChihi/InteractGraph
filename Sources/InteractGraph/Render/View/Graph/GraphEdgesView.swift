@@ -28,7 +28,6 @@ internal struct GraphEdgesView: View {
                 let destination = isTopDown ? destinationNode.topCenter : destinationNode.bottomCenter
                 let controlPoints = elementFrames.edgeFrames(edge).map { isTopDown ? $0.bottomCenter : $0.topCenter }
                 EdgePathView(origin: origin, destination: destination, controlPoints: isTopDown ? controlPoints : controlPoints.reversed())
-
             }
         }
     }

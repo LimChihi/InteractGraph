@@ -19,6 +19,14 @@ internal struct LayoutGraph {
         self.path = path
     }
     
+    internal init(_ graph: Graph, focusNode: Node.ID) {
+        let filterGraph = filter(graph, focusNodeID: focusNode)
+        var (layoutGraph, path) = longestPath(filterGraph)
+        adjustEdgeWeight(&layoutGraph, path: &path)
+        self.storage = layoutGraph
+        self.path = path
+    }
+    
 }
 
 
@@ -26,7 +34,7 @@ fileprivate func longestPath(_ graph: Graph) -> (layoutGraph: AdjacencyListGraph
     
     var path: [Node.ID: LayoutGraphIndexPath] = [:]
     
-    var layoutGraph = AdjacencyListGraph<Node>(storage: [[]])
+    var layoutGraph = AdjacencyListGraph<Node>([[]])
     
     var currentOutputEdge = Set<OutputEdge>()
     
@@ -46,6 +54,61 @@ fileprivate func longestPath(_ graph: Graph) -> (layoutGraph: AdjacencyListGraph
     }
     
     return (layoutGraph, path)
+}
+
+
+fileprivate func filter(_ graph: Graph, focusNodeID: Node.ID) -> Graph {
+    
+    guard let focusNode = graph.node(id: focusNodeID) else {
+        preconditionFailure()
+    }
+    
+    var releatedNodes: Set<Node> = []
+    var releatedEdges: Set<Edge> = []
+    
+    var stack: [Node] = [focusNode]
+    
+    // inputs
+    while let node = stack.popLast() {
+        releatedNodes.insert(Node(id: node.id))
+        
+        for input in node.inputEdge {
+            guard !releatedNodes.contains(where: { $0.id == input.from}) &&
+                    !stack.contains(where: { $0.id == input.from }) else {
+                continue
+            }
+            releatedEdges.insert(Edge(from: input.from, to: node.id))
+            guard let inputNode = graph.node(id: input.from) else {
+                preconditionFailure()
+            }
+            stack.append(inputNode)
+        }
+    }
+    
+    // outputs
+    stack = [focusNode]
+    while let node = stack.popLast() {
+        releatedNodes.insert(Node(id: node.id))
+
+        for output in node.outputEdge {
+            guard !releatedNodes.contains(where: { $0.id == output.to}) &&
+                    !stack.contains(where: { $0.id == output.to }) else {
+                        continue
+                    }
+            
+            releatedEdges.insert(Edge(from: node.id, to: output.to))
+            guard let outputNode = graph.node(id: output.to) else {
+                preconditionFailure()
+            }
+            stack.append(outputNode)
+        }
+    }
+    
+    let newGraph = Graph()
+    newGraph.addNodes(Array(releatedNodes).sorted(by: { $0.id < $1.id }))
+    newGraph.addEdges(releatedEdges)
+    
+    return newGraph
 }
 
 
