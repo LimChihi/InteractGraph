@@ -24,7 +24,6 @@ fileprivate struct Label: ViewModifier {
         ZStack {
             content
             Text(label)
-                .foregroundColor(.white)
         }
     }
     

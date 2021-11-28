@@ -9,21 +9,22 @@ import SwiftUI
 
 internal struct EllipseLabelView: View {
     
-    private let label: String
+    private let attribute: Node.Attribute
     
-    internal init(label: String) {
-        self.label = label
+    internal init(attribute: Node.Attribute) {
+        self.attribute = attribute
     }
     
     internal var body: some View {
         Ellipse()
-            .foregroundColor(.blue)
-            .label(label)
+            .stroke(style: StrokeStyle(dash: attribute.dashed ? [5] : []))
+            .foregroundColor(attribute.borderColor)
+            .label(attribute.label)
     }
 }
 
-fileprivate struct EllipseLabelView_Previews: PreviewProvider {
+struct EllipseLabelView_Previews: PreviewProvider {
     static var previews: some View {
-        EllipseLabelView(label: "node")
+        EllipseLabelView(attribute: .init(label: "Hello", borderColor: .blue, dashed: false))
     }
 }

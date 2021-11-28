@@ -6,7 +6,6 @@ InteractGraph: A weak Graph tool.
 <p align="center">
   <img height="300" src="ReadMeResources/Sample.png" />
 </p>
-
 **⚠️  The `InteractGraph` is currently undergoing rapid iteration and the public APIs are not guaranteed to be stable.**
 
 ***
@@ -14,6 +13,12 @@ InteractGraph: A weak Graph tool.
 ## Feature
 
 - [x] filter
+
+### Node Attributes
+
+- [x] label
+- [x] borderColor
+- [x] dashed border
 
 ## Usage
 
@@ -62,9 +67,10 @@ struct ContentView: View {
 ## Future of InteractGraph
 
 - [ ] Optimize graph layering algorithm. (It's longest-path now)
-- [ ] More Node's and Edge Attribute supported.
+- [ ] More Node's and Edge's Attribute support.
 - [ ] JSON Graph data import.
 - [ ] Graph data dynamic record.
+- [ ] Accessibility.
 
 ## Sponsors
 

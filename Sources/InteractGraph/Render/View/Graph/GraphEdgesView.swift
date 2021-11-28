@@ -11,6 +11,8 @@ internal struct GraphEdgesView: View {
 
     private let edges: [Edge]
 
+    // FIXME: It should be [ID: CGRect]
+    // Not [Element: CGRect]
     private let elementFrames: ElementFramesKey.Value
     
     internal init(edges: [Edge], elementFrames: ElementFramesKey.Value) {

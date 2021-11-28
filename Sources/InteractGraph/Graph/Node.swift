@@ -5,6 +5,7 @@
 //  Created by limchihi on 8/11/2021.
 //
 
+import SwiftUI
 
 public struct Node {
     
@@ -18,16 +19,24 @@ public struct Node {
     
     internal var outputEdge: [OutputEdge]
     
-    public init(id: ID, label: String) {
+    public init(id: ID, label: String, borderColor: Color = .white, dashed: Bool = false) {
         self.id = id
-        self.attribute = Attribute(label: label)
+        self.attribute = Attribute(label: label, borderColor: borderColor, dashed: dashed)
         self.inputEdge = []
         self.outputEdge = []
     }
     
-    internal init(id: ID, attribute: Attribute = Attribute(label: "")) {
+    internal init(id: ID, attribute: Attribute) {
         self.id = id
         self.attribute = attribute
+        self.inputEdge = []
+        self.outputEdge = []
+    }
+    
+    // FIXME: Remove this
+    internal init(id: ID) {
+        self.id = id
+        self.attribute = .default
         self.inputEdge = []
         self.outputEdge = []
     }
@@ -35,6 +44,14 @@ public struct Node {
     internal struct Attribute {
         
         internal let label: String
+        
+        internal let borderColor: Color
+        
+        internal let dashed: Bool
+        
+        static var `default`: Attribute {
+            Attribute(label: "", borderColor: .clear, dashed: false)
+        }
         
     }
     

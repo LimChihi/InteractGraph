@@ -35,7 +35,7 @@ internal struct GraphNodeView: View {
                         GeometryReader { reader in
                             switch item.element {
                             case .node(let node):
-                                EllipseLabelView(label: node.attribute.label)
+                                EllipseLabelView(attribute: node.attribute)
                                     .preference(
                                         key: ElementFramesKey.self,
                                         value: [.node(node): reader.frame(in: coordinateSpace)])
