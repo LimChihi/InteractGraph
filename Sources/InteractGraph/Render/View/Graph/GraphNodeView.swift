@@ -40,6 +40,7 @@ internal struct GraphNodeView: View {
                                 switch item.element {
                                 case .node(let nodeIndex):
                                     EllipseLabelView(node: graph[nodeIndex])
+                                        .background()
                                         .onTapGesture {
                                             onTapNode(item)
                                         }

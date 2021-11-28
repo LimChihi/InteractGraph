@@ -57,9 +57,9 @@ fileprivate typealias LevelElement = ViewElementGraph.ViewElement
 
 
 fileprivate func generateStorage(graph: Graph, focusNode: NodeIndex?) -> AdjacencyListGraph<LevelElement> {
-    let layoutGraph: LayoutGraph = LayoutGraph(graph, focusNode: focusNode)
+    let layoutGraph = LayoutGraph(graph, focusNode: focusNode)
     var storage = convertNodeToViewElement(layoutGraph, graph: graph)
-    addEdgeElemetn(&storage, nodePaths: layoutGraph.path, graph: graph)
+    addEdgeElemetn(&storage, layoutGraph: layoutGraph, graph: graph)
     return storage
 }
 
@@ -89,30 +89,34 @@ fileprivate func convertNodeToViewElement(_ layoutGraph: LayoutGraph, graph: Gra
 }
 
 
-fileprivate func addEdgeElemetn(_ layoutGraph: inout AdjacencyListGraph<LevelElement>, nodePaths: [NodeIndex: LayoutGraphIndexPath], graph: Graph) {
+fileprivate func addEdgeElemetn(_ storage: inout AdjacencyListGraph<LevelElement>, layoutGraph: LayoutGraph, graph: Graph) {
     
-    var nodePaths = nodePaths
-    layoutGraph.flatForEach { viewElement, indexPath, _ in
+    var nodePaths = layoutGraph.path
+    storage.flatForEach { viewElement, indexPath, _ in
         guard case let .node(nodeIndex) = viewElement.element else {
             return
         }
         
         for outputIndex in graph.outputEdges(for: nodeIndex) {
+            if let releatedNodes = layoutGraph.releatedNodes, !releatedNodes.contains(outputIndex) {
+                continue
+            }
+            
             let edgeIndex = graph.edgeIndex(from: nodeIndex, to: outputIndex)!
-            let newPaths = edgePassByPaths(from: nodePaths[nodeIndex]!, to: nodePaths[outputIndex]!, in: layoutGraph)
+            let newPaths = edgePassByPaths(from: nodePaths[nodeIndex]!, to: nodePaths[outputIndex]!, in: storage)
             for path in newPaths {
-                let preNodeFrame = layoutGraph[path.rank].count != path.level ? layoutGraph[path].frame : nil
-                let x = preNodeFrame?.minX ?? (layoutGraph[path.rank].last!.frame.maxX + levelGap)
-                let y = preNodeFrame?.minY ?? layoutGraph[path.rank].first!.frame.minY
+                let preNodeFrame = storage[path.rank].count != path.level ? storage[path].frame : nil
+                let x = preNodeFrame?.minX ?? (storage[path.rank].last!.frame.maxX + levelGap)
+                let y = preNodeFrame?.minY ?? storage[path.rank].first!.frame.minY
                 let newFrame = CGRect(x: x, y: y, width: edgeWidth, height: elementHeight)
-                layoutGraph[path.rank].insert(LevelElement(element: .edge(edgeIndex), frame: newFrame), at: path.level)
+                storage[path.rank].insert(LevelElement(element: .edge(edgeIndex), frame: newFrame), at: path.level)
                 
-                guard layoutGraph[path.rank].count > path.rank + 1 else {
+                guard storage[path.rank].count > path.rank + 1 else {
                     continue
                 }
-                for newlevelIndex in path.rank + 1..<layoutGraph[path.rank].endIndex {
-                    layoutGraph[path.rank][newlevelIndex].frame.origin.x += newFrame.origin.x
-                    if case let .node(nodeIndex) = layoutGraph[path.rank][newlevelIndex].element {
+                for newlevelIndex in path.rank + 1..<storage[path.rank].endIndex {
+                    storage[path.rank][newlevelIndex].frame.origin.x += newFrame.origin.x
+                    if case let .node(nodeIndex) = storage[path.rank][newlevelIndex].element {
                         nodePaths[nodeIndex]?.level += 1
                     }
                 }
