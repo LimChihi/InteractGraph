@@ -1,139 +1,137 @@
 //
 //  LayoutGraph.swift
-//  
+//  InteractGraph
 //
-//  Created by lim on 19/11/2021.
+//  Created by lim on 28/11/2021.
 //
 
 
 internal struct LayoutGraph {
     
-    internal let storage: AdjacencyListGraph<Node>
+    internal let storage: AdjacencyListGraph<NodeIndex> 
     
-    internal let path: [Node.ID: LayoutGraphIndexPath]
+    internal let path: [NodeIndex: LayoutGraphIndexPath]
     
-    internal init(_ graph: Graph) {
+    internal init(_ graph: Graph, focusNode: NodeIndex? = nil) {
+        var graph = graph
+        if let focusNode = focusNode {
+            graph = filter(graph, focusNodeIndex: focusNode)
+        }
         var (layoutGraph, path) = longestPath(graph)
-        adjustEdgeWeight(&layoutGraph, path: &path)
+        adjustEdgeWeight(&layoutGraph, path: &path, graph: graph)
         self.storage = layoutGraph
         self.path = path
     }
-    
-    internal init(_ graph: Graph, focusNode: Node.ID) {
-        let filterGraph = filter(graph, focusNodeID: focusNode)
-        var (layoutGraph, path) = longestPath(filterGraph)
-        adjustEdgeWeight(&layoutGraph, path: &path)
-        self.storage = layoutGraph
-        self.path = path
-    }
-    
+
 }
 
-
-fileprivate func longestPath(_ graph: Graph) -> (layoutGraph: AdjacencyListGraph<Node>, path: [Node.ID: LayoutGraphIndexPath]) {
+fileprivate func longestPath(_ graph: Graph) -> (layoutGraph: AdjacencyListGraph<NodeIndex>, path: [NodeIndex: LayoutGraphIndexPath]) {
     
-    var path: [Node.ID: LayoutGraphIndexPath] = [:]
+    var path: [NodeIndex: LayoutGraphIndexPath] = [:]
     
-    var layoutGraph = AdjacencyListGraph<Node>([[]])
+    var layoutGraph = AdjacencyListGraph<NodeIndex>([[]])
     
-    var currentOutputEdge = Set<OutputEdge>()
+    var currentOutputEdge = Set<NodeIndex>()
     
-    for node in graph.nodes {
-        
+    graph.forEach { node, _, outputEdges, nodeIndex, _ in
         let indexPath: AdjacencyListIndexPath
-        if currentOutputEdge.contains(where: { node.id == $0.to } ) {
-            indexPath = layoutGraph.appendElementAtNewRow(node)
+        if currentOutputEdge.contains(where: { nodeIndex == $0 } ) {
+            indexPath = layoutGraph.appendElementAtNewRow(nodeIndex)
             currentOutputEdge.removeAll()
         } else {
-            indexPath = layoutGraph.appendElementAtLast(node)
+            indexPath = layoutGraph.appendElementAtLast(nodeIndex)
         }
         
         
-        path[node.id] = LayoutGraphIndexPath(indexPath)
-        node.outputEdge.forEach { currentOutputEdge.insert($0) }
+        path[nodeIndex] = LayoutGraphIndexPath(indexPath)
+        
+        outputEdges.forEach { currentOutputEdge.insert($0) }
     }
     
     return (layoutGraph, path)
 }
 
 
-fileprivate func filter(_ graph: Graph, focusNodeID: Node.ID) -> Graph {
+fileprivate func filter(_ graph: Graph, focusNodeIndex: NodeIndex) -> Graph {
     
-    guard let focusNode = graph.node(id: focusNodeID) else {
-        preconditionFailure()
-    }
     
-    var releatedNodes: Set<Node> = []
-    var releatedEdges: Set<Edge> = []
+    var releatedNodes: Set<NodeIndex> = []
+    var releatedEdges: Set<EdgeIndex> = []
     
-    var stack: [Node] = [focusNode]
+    var stack: [NodeIndex] = [focusNodeIndex]
     
     // inputs
-    while let node = stack.popLast() {
-        releatedNodes.insert(Node(id: node.id, attribute: node.attribute))
-        
-        for input in node.inputEdge {
-            guard !releatedNodes.contains(where: { $0.id == input.from}) &&
-                    !stack.contains(where: { $0.id == input.from }) else {
+    while let nodeIndex = stack.popLast() {
+        releatedNodes.insert(nodeIndex)
+        for input in graph.inputEdges(for: nodeIndex) {
+            guard !releatedNodes.contains(where: { $0 == input }) &&
+                    !stack.contains(where: { $0 == input }) else {
                 continue
             }
-            releatedEdges.insert(Edge(from: input.from, to: node.id))
-            guard let inputNode = graph.node(id: input.from) else {
-                preconditionFailure()
-            }
-            stack.append(inputNode)
+            releatedEdges.insert(graph.edgeIndex(from: input, to: nodeIndex)!)
+            stack.append(input)
         }
     }
     
     // outputs
-    stack = [focusNode]
-    while let node = stack.popLast() {
-        releatedNodes.insert(Node(id: node.id, attribute: node.attribute))
+    stack = [focusNodeIndex]
+    while let nodeIndex = stack.popLast() {
+        releatedNodes.insert(nodeIndex)
 
-        for output in node.outputEdge {
-            guard !releatedNodes.contains(where: { $0.id == output.to}) &&
-                    !stack.contains(where: { $0.id == output.to }) else {
-                        continue
-                    }
-            
-            releatedEdges.insert(Edge(from: node.id, to: output.to))
-            guard let outputNode = graph.node(id: output.to) else {
-                preconditionFailure()
+        for output in graph.outputEdges(for: nodeIndex) {
+            guard !releatedNodes.contains(where: { $0 == output }) &&
+                    !stack.contains(where: { $0 == output }) else {
+                continue
             }
-            stack.append(outputNode)
+            
+            releatedEdges.insert(graph.edgeIndex(from: output, to: nodeIndex)!)
+            stack.append(output)
         }
     }
     
-    let newGraph = Graph()
-    newGraph.addNodes(Array(releatedNodes).sorted(by: { $0.id < $1.id }))
-    newGraph.addEdges(releatedEdges)
+    var newNodes: [Node] = []
+    newNodes.reserveCapacity(releatedNodes.count)
+    graph.forEach { node, _, _, nodeIndex, _ in
+        if releatedNodes.contains(nodeIndex) {
+            newNodes.append(node)
+        }
+    }
     
-    return newGraph
+    var newEdges: [Edge] = []
+    newEdges.reserveCapacity(releatedEdges.count)
+    graph.forEach { edge, edgeIndex, _ in
+        if releatedEdges.contains(edgeIndex) {
+            newEdges.append(edge)
+        }
+    }
+    
+    return Graph(nodes: newNodes, edges: newEdges)
 }
 
 
-fileprivate func adjustEdgeWeight(_ layoutGraph: inout AdjacencyListGraph<Node>, path: inout [Node.ID: LayoutGraphIndexPath]) {
+fileprivate func adjustEdgeWeight(_ layoutGraph: inout AdjacencyListGraph<NodeIndex>, path: inout [NodeIndex: LayoutGraphIndexPath], graph: Graph) {
     
     for rankIndex in layoutGraph.storage.indices {
         guard rankIndex != 0 else {
             continue
         }
         
-        let currentRank = layoutGraph[rankIndex]
+        let currentRank: [NodeIndex] = layoutGraph[rankIndex]
 
         layoutGraph[rankIndex] = currentRank
             .enumerated()
-            .map { (levelIndex, node) in
-                let weight = node.inputEdge.reduce(0) { partialResult, input in
-                    partialResult + (path[input.from]?.level ?? 0)
+            .map { (levelIndex, nodeIndex) in
+                
+                let weight = graph.inputEdges(for: nodeIndex).reduce(0) { partialResult, input in
+                    partialResult + (path[input]?.level ?? 0)
                 }
                 return (levelIndex, weight)
             }
             .sorted { $0.1 < $1.1 }.enumerated()
-            .map { (levelIndex: Int, arg1: (Int, Int)) -> Node in
+            .map { (levelIndex: Int, arg1: (Int, Int)) -> NodeIndex in
                 let (i, _) = arg1
                 let node = currentRank[i]
-                path[node.id] = LayoutGraphIndexPath(rank: rankIndex, level: levelIndex)
+                path[node] = LayoutGraphIndexPath(rank: rankIndex, level: levelIndex)
                 return node
             }
     }

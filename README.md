@@ -18,8 +18,12 @@ InteractGraph: A weak Graph tool.
 ### Node Attributes
 
 - [x] label
-- [x] borderColor
+- [x] border color
 - [x] dashed border
+
+### Edge Attribute
+
+- [x] directed
 
 ## Usage
 
@@ -29,19 +33,16 @@ Prepared graph.
 import InteractGraph
 
 var graph: Graph {
-  let graph = Graph() 
-  
+
   let node0 = Node(id: 0x0, label: "0x0: TheBeginningOfEverything")
   ...
   let node42 = Node(id: 0x42, label: "0x42: TheAnswerToEverything")
-  graph.addNodes([node0, ..., node42])
   
   let edge0 = Edge(from: node0, to: node42)
   ...
   let edge42 = Edge(from: node42, to: node0)
-	graph.addEdges([edge0, ..., edge42])
  
-  return graph
+  return Graph(nodes: [node0, ..., node42], edges: [edge0, ..., edge42])
 }
 ```
 

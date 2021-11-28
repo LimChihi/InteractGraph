@@ -2,55 +2,42 @@
 //  Node.swift
 //  InteractGraph
 //
-//  Created by limchihi on 8/11/2021.
+//  Created by lim on 28/11/2021.
 //
 
 import SwiftUI
 
-public struct Node {
-    
-    public typealias ID = UInt64
+public struct Node: GraphStorageNode {
 
-    internal let id: ID
+    public let id: ID
     
-    internal let attribute: Attribute
+    public let label: String
     
-    internal var inputEdge: [InputEdge]
+    public let borderColor: Color?
     
-    internal var outputEdge: [OutputEdge]
+    public let dashed: Bool
     
     public init(id: ID, label: String, borderColor: Color? = nil, dashed: Bool = false) {
         self.id = id
-        self.attribute = Attribute(label: label, borderColor: borderColor, dashed: dashed)
-        self.inputEdge = []
-        self.outputEdge = []
+        self.label = label
+        self.borderColor = borderColor
+        self.dashed = dashed
     }
     
-    internal init(id: ID, attribute: Attribute) {
-        self.id = id
-        self.attribute = attribute
-        self.inputEdge = []
-        self.outputEdge = []
-    }
-    
-    // FIXME: Remove this
-    internal init(id: ID) {
-        self.id = id
-        self.attribute = .default
-        self.inputEdge = []
-        self.outputEdge = []
-    }
-    
-    internal struct Attribute {
+    public struct ID: RawRepresentable, ExpressibleByIntegerLiteral, Hashable {
         
-        internal let label: String
+        public let rawValue: UInt64
         
-        internal let borderColor: Color?
+        public init(_ rawValue: UInt64) {
+            self.rawValue = rawValue
+        }
+
+        public init(rawValue: UInt64) {
+            self.rawValue = rawValue
+        }
         
-        internal let dashed: Bool
-        
-        static var `default`: Attribute {
-            Attribute(label: "", borderColor: nil, dashed: false)
+        public init(integerLiteral value: UInt64) {
+            self.rawValue = value
         }
         
     }

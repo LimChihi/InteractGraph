@@ -1,6 +1,6 @@
 //
 //  EdgePathView.swift
-//  
+//  InteractGraph
 //
 //  Created by lim on 16/11/2021.
 //
@@ -9,9 +9,9 @@ import SwiftUI
 
 internal struct EdgePathView: View {
     
+    private let edge: Edge
+
     private let directed: Bool
-    
-    private let attribute: Edge.Attribute
     
     private let origin: CGPoint
     
@@ -19,9 +19,9 @@ internal struct EdgePathView: View {
     
     private let controlPoints: [CGPoint]
     
-    internal init(directed: Bool, attribute: Edge.Attribute, origin: CGPoint, destination: CGPoint, controlPoints: [CGPoint]) {
+    internal init(edge: Edge, directed: Bool, origin: CGPoint, destination: CGPoint, controlPoints: [CGPoint]) {
+        self.edge = edge
         self.directed = directed
-        self.attribute = attribute
         self.origin = origin
         self.destination = destination
         self.controlPoints = controlPoints
@@ -42,7 +42,6 @@ internal struct EdgePathView: View {
                 }
                 
                 path.addLine(to: destination)
-                
             }
             .stroke(style: StrokeStyle(lineWidth: 2, lineJoin: .round, dash: []))
             if directed {
@@ -82,7 +81,7 @@ internal struct EdgePathView: View {
 struct EdgePathView_PreViews: PreviewProvider {
     
     static var previews: some View {
-        EdgePathView(directed: false, attribute: .init(color: nil), origin: CGPoint(x: 50, y: 50), destination: CGPoint(x: 300, y: 300), controlPoints: [CGPoint(x: 100, y: 100), CGPoint(x: 100, y: 300)])
+        EdgePathView(edge: .init(from: 0, to: 1), directed: false, origin: CGPoint(x: 50, y: 50), destination: CGPoint(x: 300, y: 300), controlPoints: [CGPoint(x: 100, y: 100), CGPoint(x: 100, y: 300)])
     }
     
 }

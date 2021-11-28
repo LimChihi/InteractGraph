@@ -2,188 +2,99 @@
 //  Graph.swift
 //  InteractGraph
 //
-//  Created by limchihi on 8/11/2021.
+//  Created by lim on 28/11/2021.
 //
 
-import Foundation
 
-public final class Graph {
+internal typealias NodeIndex = GraphStorage<Node, Edge>.NodeIndex
+
+internal typealias EdgeIndex = GraphStorage<Node, Edge>.EdgeIndex
+
+internal typealias InputEdge = NodeIndex
+
+internal typealias OutputEdge = NodeIndex
+
+public struct Graph {
     
-    internal let id: UUID
+    private let storage: GraphStorage<Node, Edge>
     
-    private let directed: Bool
-    
-    private let strict: Bool
-    
-    private var subgraphs: [Subgraph]
-    
-    internal private(set) var nodes: [Node]
-    
-    private var isArchiving: Bool
-    
-    
-    /// Creates a graph.
-    ///
-    /// `directed` and `strict` is not ready yep.
-    /// `directed` will always true
-    /// `strict` will always false
-    ///
-    /// - Parameters:
-    ///   - directed: Whether the graph is directed; `true by default`.
-    ///   - strict: Whether the graph is strict; `false` by default.
-    internal init(directed: Bool = true, strict: Bool = false) {
-        self.id = UUID()
-        self.directed = directed
-        self.strict = strict
-        self.subgraphs = []
-        self.nodes = []
-        self.isArchiving = false
+    public init(directed: Bool = true) {
+        self.storage = GraphStorage(directed: directed)
     }
     
-    public init() {
-        self.id = UUID()
-        self.directed = true
-        self.strict = false
-        self.subgraphs = []
-        self.nodes = []
-        self.isArchiving = false
-    }
-    
-    private init(deepCopy instance: Graph) {
-        self.id = instance.id
-        self.directed = instance.directed
-        self.strict = instance.strict
-        self.subgraphs = instance.subgraphs
-        self.nodes = instance.nodes
-        self.isArchiving = instance.isArchiving
-    }
-    
-    // MARK: - Operation
-    
-    // MARK: Add
-    
-    public func addNode(_ node: Node) {
-        assert(!nodes.contains(node))
-        nodes.append(node)
-        archiveIfNeed()
-    }
-    
-    public func addNodes<S: Sequence>(_ nodes: S) where S.Element == Node {
-        self.nodes.append(contentsOf: nodes)
-        assert(Set(self.nodes).count == self.nodes.count)
-        archiveIfNeed()
-    }
-    
-    public func addEdge(_ edge: Edge) {
-        guard edge.to != edge.from else {
-            preconditionFailure()
-        }
-        guard let (inputIndex, outputIndex) = nodeIndexOfEdge(edge) else {
-            assertionFailure()
-            return
-        }
+    public init<SN: Sequence, SE: Sequence>(directed: Bool = true, nodes: SN, edges: SE) where SN.Element == Node, SE.Element == Edge {
+        self.storage = GraphStorage(directed: directed)
         
-        if strict {
-            var duplicate = nodes[inputIndex].outputEdge.contains { $0.to == edge.to }
-            if directed {
-                duplicate = duplicate || nodes[inputIndex].inputEdge.contains { $0.from == edge.from }
-            }
-            precondition(!duplicate)
-        }
-        
-        nodes[outputIndex].outputEdge.append(OutputEdge(to: edge.to))
-        nodes[inputIndex].inputEdge.append(InputEdge(from: edge.from))
-           
-        archiveIfNeed()
+        self.storage.add(nodes: nodes)
+        self.storage.add(edges: edges)
     }
     
-    public func addEdges<S: Sequence>(_ edges: S) where S.Element == Edge {
-        edges.forEach { addEdge($0) }
+    internal var directed: Bool {
+        storage.directed
     }
     
-    // MARK: Read
-    
-    public func node(id: Node.ID) -> Node? {
-        nodes.first { $0.id == id }
+    internal var allEdges: [GraphEdge] {
+        storage.allEdges.map { GraphEdge(index: $0.index, fromNodeIndex: $0.from, toNodeIndex: $0.to) }
     }
     
-    // MARK: Remove
-    
-    public func removeNode(_ node: Node) {
-        guard let index = nodes.firstIndex (where: { node == $0 }) else {
-            preconditionFailure()
-        }
-        nodes.remove(at: index)
-        archiveIfNeed()
+    public mutating func add(node: Node) {
+        storage.add(node: node)
+    }
+
+    public mutating func add<S: Sequence>(nodes: S) where S.Element == Node {
+        storage.add(nodes: nodes)
     }
     
-    public func removeNodes<S: Sequence>(_ nodes: S) where S.Element == Node {
-        nodes.forEach { removeNode($0) }
+    internal func forEach(body: (Node, [InputEdge], [OutputEdge], NodeIndex, inout Bool) -> ()) {
+        storage.forEach(body: body)
+    }
+
+    internal subscript(nodeIndex: NodeIndex) -> Node {
+        storage[nodeIndex]
+    }
+
+    internal mutating func remove(at nodeIndex: NodeIndex) -> Node {
+        storage.remove(at: nodeIndex)
+    }
+
+    internal mutating func remove<S: Sequence>(nodesAt nodeIndices: S) -> [Node] where S.Element == NodeIndex {
+        storage.remove(nodesAt: nodeIndices)
+    }
+
+    public mutating func add(edge: Edge) {
+        storage.add(edge: edge)
+    }
+
+    public mutating func add<S: Sequence>(edges: S) where S.Element == Edge {
+        storage.add(edges: edges)
     }
     
-    public func removeEdge(_ edge: Edge) {
-        guard let (inputIndex, outputIndex) = nodeIndexOfEdge(edge) else {
-            preconditionFailure()
-        }
-        guard let outputEdgeIndex = nodes[inputIndex].outputEdge.firstIndex(of: OutputEdge(to: edge.to)),
-              let inputEdgeIndex = nodes[outputIndex].inputEdge.firstIndex(of: InputEdge(from: edge.from)) else {
-                  preconditionFailure()
-              }
-        nodes[inputIndex].outputEdge.remove(at: outputEdgeIndex)
-        nodes[outputIndex].inputEdge.remove(at: inputEdgeIndex)
-        
-        archiveIfNeed()
+    internal func edgeIndex(from: NodeIndex, to: NodeIndex) -> EdgeIndex? {
+        storage.edgeIndex(from: from, to: to)
+    }
+
+    internal subscript(edgeIndex: EdgeIndex) -> Edge {
+        storage[edgeIndex]
     }
     
-    public func removeEdges<S: Sequence>(_ edges: S) where S.Element == Edge {
-        edges.forEach { removeEdge($0) }
+    internal func forEach(body: (Edge, EdgeIndex, inout Bool) -> ()) {
+        storage.forEach(body: body)
     }
     
-    // MARK: - Archive
-    
-    public func startArchive() {
-        isArchiving = true
+    internal func inputEdges(for nodeIndex: NodeIndex) -> [InputEdge] {
+        storage.inputEdges(for: nodeIndex)
     }
     
-    public func stopArchive() {
-        isArchiving = false
+    internal func outputEdges(for nodeIndex: NodeIndex) -> [OutputEdge] {
+        storage.outputEdges(for: nodeIndex)
     }
-    
-    public func dropPreviouslyArchive() {
-        GraphArchiver.shared.dropAll(id: id)
+
+    internal mutating func remove(at edgeIndex: EdgeIndex) -> Edge {
+        storage.remove(at: edgeIndex)
     }
-    
-    private func archiveIfNeed() {
-        if isArchiving {
-            GraphArchiver.shared.addArchive(graph: Graph(deepCopy: self))
-        }
-    }
-    
-    // MARK: - Helper
-    
-    private func nodeIndexOfEdge(_ edge: Edge) -> (input: Int, output: Int)? {
-        var input: Int?
-        var output: Int?
-        for (index, node) in nodes.enumerated() {
-            if node.id == edge.from {
-                if let input = input {
-                    return (input, index)
-                } else {
-                    output = index
-                    continue
-                }
-            }
-            
-            if node.id == edge.to {
-                if let output = output {
-                    return (index, output)
-                } else {
-                    input = index
-                    continue
-                }
-            }
-        }
-        return nil
+
+    internal mutating func remove<S: Sequence>(edgesAt edgeIndices: S) -> [Edge] where S.Element == EdgeIndex {
+        storage.remove(edgesAt: edgeIndices)
     }
     
 }

@@ -2,42 +2,24 @@
 //  Edge.swift
 //  InteractGraph
 //
-//  Created by limchihi on 8/11/2021.
+//  Created by lim on 28/11/2021.
 //
 
 import SwiftUI
 
-public struct Edge {
+public struct Edge: GraphStorageEdge {
 
     public let from: Node.ID
     
     public let to: Node.ID
     
-    internal let directed: Bool
-    
-    internal let attribute: Attribute
-    
     public init(from: Node.ID, to: Node.ID) {
         self.from = from
         self.to = to
-        self.directed = true
-        self.attribute = Attribute(color: nil)
-    }
-    
-    public init(from fromNode: Node, to toNode: Node) {
-        self.from = fromNode.id
-        self.to = toNode.id
-        self.directed = true
-        self.attribute = Attribute(color: nil)
-    }
-    
-    internal struct Attribute {
-        
-        internal let color: Color?
-        
     }
     
 }
+
 
 extension Edge: Hashable {
     
@@ -52,6 +34,7 @@ extension Edge: Hashable {
     
 }
 
+
 extension Edge: CustomStringConvertible {
     
     public var description: String {
@@ -60,9 +43,25 @@ extension Edge: CustomStringConvertible {
     
 }
 
+
 extension Edge: Identifiable {
     
     public var id: Self {
+        self
+    }
+    
+}
+
+
+internal struct GraphEdge: Identifiable, Hashable {
+    
+    internal let index: EdgeIndex
+    
+    internal let fromNodeIndex: NodeIndex
+    
+    internal let toNodeIndex: NodeIndex
+    
+    internal var id: Self {
         self
     }
     
