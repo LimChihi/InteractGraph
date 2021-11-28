@@ -19,7 +19,7 @@ public struct Node {
     
     internal var outputEdge: [OutputEdge]
     
-    public init(id: ID, label: String, borderColor: Color = .white, dashed: Bool = false) {
+    public init(id: ID, label: String, borderColor: Color? = nil, dashed: Bool = false) {
         self.id = id
         self.attribute = Attribute(label: label, borderColor: borderColor, dashed: dashed)
         self.inputEdge = []
@@ -45,12 +45,12 @@ public struct Node {
         
         internal let label: String
         
-        internal let borderColor: Color
+        internal let borderColor: Color?
         
         internal let dashed: Bool
         
         static var `default`: Attribute {
-            Attribute(label: "", borderColor: .clear, dashed: false)
+            Attribute(label: "", borderColor: nil, dashed: false)
         }
         
     }
