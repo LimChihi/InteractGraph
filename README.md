@@ -6,7 +6,8 @@ InteractGraph: A weak Graph tool.
 <p align="center">
   <img height="300" src="ReadMeResources/Sample.png" />
 </p>
-**⚠️  The `InteractGraph` is currently undergoing rapid iteration and the public APIs are not guaranteed to be stable.**
+
+⚠️** The `InteractGraph` is currently undergoing rapid iteration and the public APIs are not guaranteed to be stable.**
 
 ***
 
