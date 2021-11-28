@@ -29,7 +29,7 @@ internal struct EdgePathView: View {
     
     internal var body: some View {
         ZStack {
-            Path { path in
+            let path = Path { path in
                 path.move(to: origin)
                 for index in controlPoints.indices {
                     guard (2 * index + 1) < controlPoints.endIndex else {
@@ -43,9 +43,15 @@ internal struct EdgePathView: View {
                 
                 path.addLine(to: destination)
             }
-            .stroke(style: StrokeStyle(lineWidth: 2, lineJoin: .round, dash: []))
+            let style = StrokeStyle(lineWidth: 2, lineJoin: .round, dash: edge.dashed ? [5] : [])
+            if let color = edge.color {
+                path.stroke(color, style: style)
+            } else {
+                path.stroke(style: style)
+            }
+            
             if directed {
-                Path { path in
+                 let arraw = Path { path in
                     // Arraw
                     // https://stackoverflow.com/questions/48625763/how-to-draw-a-directional-arrow-head
                     let origin = controlPoints.last ?? self.origin
@@ -71,7 +77,12 @@ internal struct EdgePathView: View {
                     path.addLine(to: destination)
                     path.addLine(to: arrowLine2)
                 }
-                .stroke(style: StrokeStyle(lineWidth: 2, lineJoin: .round, dash: []))
+                let style = StrokeStyle(lineWidth: 2, lineJoin: .round, dash: [])
+                if let color = edge.color {
+                    arraw.stroke(color, style: style)
+                } else {
+                    arraw.stroke(style: style)
+                }
             }
         }
         .drawingGroup()
@@ -81,7 +92,7 @@ internal struct EdgePathView: View {
 struct EdgePathView_PreViews: PreviewProvider {
     
     static var previews: some View {
-        EdgePathView(edge: .init(from: 0, to: 1), directed: false, origin: CGPoint(x: 50, y: 50), destination: CGPoint(x: 300, y: 300), controlPoints: [CGPoint(x: 100, y: 100), CGPoint(x: 100, y: 300)])
+        EdgePathView(edge: .init(from: 0, to: 1), directed: true, origin: CGPoint(x: 50, y: 50), destination: CGPoint(x: 300, y: 300), controlPoints: [CGPoint(x: 100, y: 100), CGPoint(x: 100, y: 300)])
     }
     
 }

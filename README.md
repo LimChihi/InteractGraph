@@ -7,7 +7,7 @@ InteractGraph: A weak Graph tool.
   <img height="300" src="ReadMeResources/Sample.png" />
 </p>
 
-⚠️** The `InteractGraph` is currently undergoing rapid iteration and the public APIs are not guaranteed to be stable.**
+⚠️ **The `InteractGraph` is currently undergoing rapid iteration and the public APIs are not guaranteed to be stable.**
 
 ***
 
@@ -24,6 +24,8 @@ InteractGraph: A weak Graph tool.
 ### Edge Attribute
 
 - [x] directed
+- [x] color
+- [x] dashed
 
 ## Usage
 
@@ -73,6 +75,7 @@ struct ContentView: View {
 - [ ] JSON Graph data import.
 - [ ] Graph data dynamic record.
 - [ ] Accessibility.
+- [ ] Tests
 
 ## Sponsors
 
