@@ -1,10 +1,8 @@
 //
-//  TypeIndex.swift
+//  EllipseLabelView.swift
 //  InteractGraph
 //
-//  Created by limchihi on 28/11/2021.
-//
-//  Copyright (c) 2021 Lin Zhiyi <limchihi@foxmail.com>
+//  Created by limchihi on 22/11/2021.
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -24,38 +22,26 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-public struct TypeIndex<T>: RawRepresentable, ExpressibleByIntegerLiteral, Hashable, Identifiable {
-    
-    public let rawValue: Int
-    
-    public init(_ rawValue: Int) {
-        self.rawValue = rawValue
-    }
+import SwiftUI
 
-    public init(rawValue: Int) {
-        self.rawValue = rawValue
+internal struct EllipseLabelView: View {
+    
+    private let node: Node
+    
+    internal init(node: Node) {
+        self.node = node
     }
     
-    public init(integerLiteral value: Int) {
-        self.rawValue = value
+    internal var body: some View {
+        Ellipse()
+            .stroke(style: StrokeStyle(lineWidth: 2, dash: node.dashed ? [5] : []))
+            .optionalForegroundColor(node.borderColor)
+            .label(node.label)
     }
-    
-    public var id: RawValue {
-        rawValue
-    }
-
 }
 
-
-extension Array {
-    
-    internal subscript<T>(index: TypeIndex<T>) -> Element {
-        get {
-            self[index.rawValue]
-        }
-        set {
-            self[index.rawValue] = newValue
-        }
+struct EllipseLabelView_Previews: PreviewProvider {
+    static var previews: some View {
+        EllipseLabelView(node: .init(id: 1, label: "Hello", borderColor: .blue, dashed: false))
     }
-    
 }
