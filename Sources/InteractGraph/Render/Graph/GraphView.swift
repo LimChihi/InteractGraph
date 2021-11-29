@@ -26,14 +26,14 @@ import SwiftUI
 
 internal struct GraphView: View {
     
-    private let viewGraph: AdjacencyListGraph<ViewElementGraph.ViewElement>
+    private let viewGraph: AdjacencyListGraph<ViewElementGraph.Element>
     
-    private let onTapNode: (ViewElementGraph.ViewElement) -> ()
+    private let onTapNode: (ViewElementGraph.Element) -> ()
     
     @State
     private var elementFrames: ElementFramesKey.Value = [:]
     
-    internal init(viewGraph: AdjacencyListGraph<ViewElementGraph.ViewElement>, onTapNode: @escaping (ViewElementGraph.ViewElement) -> ()) {
+    internal init(viewGraph: AdjacencyListGraph<ViewElementGraph.Element>, onTapNode: @escaping (ViewElementGraph.Element) -> ()) {
         self.viewGraph = viewGraph
         self.onTapNode = onTapNode
     }
@@ -55,7 +55,7 @@ fileprivate let coordinateSpaceName = "com.limchihi.ZStack.Graph"
 
 struct GraphView_Previews: PreviewProvider {
     
-    static var data: AdjacencyListGraph<ViewElementGraph.ViewElement> {
+    static var data: AdjacencyListGraph<ViewElementGraph.Element> {
         let graph = test_data_graph
         let viewElementGraph = ViewElementGraph(graph)
         return viewElementGraph.storage

@@ -28,7 +28,7 @@ internal struct ViewElementGraph {
     
     internal let raw: Graph
     
-    internal private(set) var storage: AdjacencyListGraph<ViewElement>
+    internal private(set) var storage: AdjacencyListGraph<Element>
 
     internal init(_ graph: Graph) {
         self.raw = graph
@@ -43,27 +43,23 @@ internal struct ViewElementGraph {
         storage = generateStorage(graph: raw, focusNode: nil)
     }
     
-    internal struct ViewElement: Hashable, Identifiable {
+    fileprivate struct ViewElement {
         
-        internal let element: Element
+        fileprivate let element: Element
         
-        internal var frame: CGRect
-        
-        internal func hash(into hasher: inout Hasher) {
-            hasher.combine(element)
-        }
-        
-        var id: Self {
-            self
-        }
+        fileprivate var frame: CGRect
         
     }
     
-    internal enum Element: Hashable {
+    internal enum Element: Hashable, Identifiable {
         
         case node(NodeIndex)
         
         case edge(EdgeIndex)
+        
+        internal var id: Self {
+            self
+        }
         
     }
     
@@ -73,11 +69,13 @@ internal struct ViewElementGraph {
 fileprivate typealias LevelElement = ViewElementGraph.ViewElement
 
 
-fileprivate func generateStorage(graph: Graph, focusNode: NodeIndex?) -> AdjacencyListGraph<LevelElement> {
+fileprivate func generateStorage(graph: Graph, focusNode: NodeIndex?) -> AdjacencyListGraph<ViewElementGraph.Element> {
     let layoutGraph = LayoutGraph(graph, focusNode: focusNode)
     var storage = convertNodeToViewElement(layoutGraph, graph: graph)
     addEdgeElemetn(&storage, layoutGraph: layoutGraph, graph: graph)
-    return storage
+    return storage.flatCompactMap {
+        $0.element
+    }
 }
 
 fileprivate func convertNodeToViewElement(_ layoutGraph: LayoutGraph, graph: Graph) -> AdjacencyListGraph<LevelElement> {

@@ -41,6 +41,7 @@ fileprivate struct Label: ViewModifier {
         ZStack {
             content
             Text(label)
+                .padding([.leading, .trailing], 32)
         }
     }
     

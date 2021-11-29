@@ -29,7 +29,7 @@ internal struct GraphNodeView: View {
     @Environment(\.graph)
     private var graph: Graph
 
-    private let viewGraph: AdjacencyListGraph<ViewElementGraph.ViewElement>
+    private let viewGraph: AdjacencyListGraph<ViewElementGraph.Element>
     
     private let coordinateSpace: CoordinateSpace
     
@@ -37,9 +37,9 @@ internal struct GraphNodeView: View {
     
     private let levelGap: CGFloat
     
-    private let onTapNode: (ViewElementGraph.ViewElement) -> ()
+    private let onTapNode: (ViewElementGraph.Element) -> ()
     
-    internal init(viewGraph: AdjacencyListGraph<ViewElementGraph.ViewElement>, coordinateSpace: CoordinateSpace, rankGap: CGFloat, levelGap: CGFloat, onTapNode: @escaping (ViewElementGraph.ViewElement) -> ()) {
+    internal init(viewGraph: AdjacencyListGraph<ViewElementGraph.Element>, coordinateSpace: CoordinateSpace, rankGap: CGFloat, levelGap: CGFloat, onTapNode: @escaping (ViewElementGraph.Element) -> ()) {
         self.viewGraph = viewGraph
         self.coordinateSpace = coordinateSpace
         self.rankGap = rankGap
@@ -52,22 +52,27 @@ internal struct GraphNodeView: View {
             ForEach(viewGraph.storage) { rank in
                 LazyHStack(spacing: levelGap) {
                     ForEach(rank) { item in
-                        GeometryReader { reader in
-                            Group {
-                                switch item.element {
-                                case .node(let nodeIndex):
-                                    EllipseLabelView(node: graph[nodeIndex])
-                                        .background()
-                                        .onTapGesture {
-                                            onTapNode(item)
-                                        }
-                                case .edge:
-                                    Spacer()
-                                }
+                        Group {
+                            switch item {
+                            case .node(let nodeIndex):
+                                EllipseLabelView(node: graph[nodeIndex])
+                                    .frame(minWidth: 120)
+                                    .background()
+                                    .onTapGesture {
+                                        onTapNode(item)
+                                    }
+                            case .edge:
+                                Spacer()
+                                    .frame(width: 10)
                             }
-                            .preference(key: ElementFramesKey.self, value: [item.element: reader.frame(in: coordinateSpace)])
                         }
-                        .frame(width: item.frame.width, height: item.frame.height)
+                        .frame(minHeight: 80)
+                        .background {
+                            GeometryReader { reader in
+                                Color.clear
+                                    .preference(key: ElementFramesKey.self, value: [item: reader.frame(in: coordinateSpace)])
+                            }
+                        }
                     }
                 }
             }
@@ -108,7 +113,7 @@ extension Dictionary where Key == ViewElementGraph.Element, Value == CGRect {
 
 struct GraphNodeView_Previews: PreviewProvider {
     
-    static var data: AdjacencyListGraph<ViewElementGraph.ViewElement> {
+    static var data: AdjacencyListGraph<ViewElementGraph.Element> {
         let graph = test_data_graph
         let viewElementGraph = ViewElementGraph(graph)
         return viewElementGraph.storage

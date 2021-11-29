@@ -18,6 +18,7 @@ InteractGraph: A weak Graph tool.
 ### Node Attributes
 
 - [x] label
+- [x] long label
 - [x] border color
 - [x] dashed border
 

@@ -35,7 +35,7 @@ public struct InteractGraphView: View {
     
     public var body: some View {
         GraphView(viewGraph: viewGraph.storage) { item in
-            guard case let .node(nodeIndex) = item.element else {
+            guard case let .node(nodeIndex) = item else {
                 return
             }
             withAnimation {
@@ -103,10 +103,13 @@ internal var test_data_graph: Graph {
     let edge2 = Edge(from: node2.id, to: node3.id)
     let edge3 = Edge(from: node3.id, to: node4.id)
     let edge4 = Edge(from: node2.id, to: node4.id)
+    let edge5 = Edge(from: node2.id, to: node5.id)
+    let edge6 = Edge(from: node4.id, to: node1.id)
+
     
     return Graph(
         nodes: [node0, node1, node2, node3, node4, node5],
-        edges: [edge0, edge1, edge2, edge3, edge4]
+        edges: [edge0, edge1, edge2, edge3, edge4, edge5, edge6]
     )
 }
 
