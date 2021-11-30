@@ -30,21 +30,20 @@ internal struct GraphView: View {
     
     private let onTapNode: (ViewElementGraph.Element) -> ()
     
-    @State
-    private var elementFrames: ElementFramesKey.Value = [:]
-    
     internal init(viewGraph: AdjacencyListGraph<ViewElementGraph.Element>, onTapNode: @escaping (ViewElementGraph.Element) -> ()) {
         self.viewGraph = viewGraph
         self.onTapNode = onTapNode
     }
     
     public var body: some View {
-        ZStack {
-            GraphNodeView(viewGraph: viewGraph, coordinateSpace: .named(coordinateSpaceName), rankGap: 50, levelGap: 50, onTapNode: onTapNode)
-            GraphEdgesView(elementFrames: elementFrames)
-        }
-        .onPreferenceChange(ElementFramesKey.self) { newValue in
-            elementFrames = newValue
+        GraphNodeView(viewGraph: viewGraph, coordinateSpace: .named(coordinateSpaceName), rankGap: 50, levelGap: 50, onTapNode: onTapNode)
+        .overlayPreferenceValue(ElementFramesKey.self) { preference in
+            GeometryReader { reader in
+                let frames = preference.mapValues { value in
+                    reader[value]
+                }
+                GraphEdgesView(elementFrames: frames)
+            }
         }
         .coordinateSpace(name: coordinateSpaceName)
     }

@@ -67,11 +67,8 @@ internal struct GraphNodeView: View {
                             }
                         }
                         .frame(minHeight: 80)
-                        .background {
-                            GeometryReader { reader in
-                                Color.clear
-                                    .preference(key: ElementFramesKey.self, value: [item: reader.frame(in: coordinateSpace)])
-                            }
+                        .anchorPreference(key: ElementFramesKey.self, value: .bounds) {
+                            [item: $0]
                         }
                     }
                 }
@@ -81,33 +78,15 @@ internal struct GraphNodeView: View {
 }
 
 internal struct ElementFramesKey: PreferenceKey {
-
-    typealias Value = [ViewElementGraph.Element: CGRect]
     
-    static let defaultValue: [ViewElementGraph.Element: CGRect] = [:]
+    internal typealias Value = [ViewElementGraph.Element: Anchor<CGRect>]
     
-    static func reduce(value: inout [ViewElementGraph.Element: CGRect], nextValue: () -> [ViewElementGraph.Element: CGRect]) {
+    internal static let defaultValue: Value = [:]
+    
+    internal static func reduce(value: inout Value, nextValue: () -> Value) {
         value.merge(nextValue()) { $1 }
     }
     
-}
-
-
-extension Dictionary where Key == ViewElementGraph.Element, Value == CGRect {
-    
-    internal func edgeFrames(_ edge: EdgeIndex) -> [CGRect] {
-        compactMap { key, value in
-            guard case .edge(let caseEdge) = key else {
-                return nil
-            }
-            guard caseEdge == edge else {
-                return nil
-            }
-            
-            return value
-        }
-        .sorted { $0.minY > $1.minY }
-    }
 }
 
 

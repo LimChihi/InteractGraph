@@ -50,6 +50,12 @@ internal struct AdjacencyListGraph<Element>: Collection {
         storage.endIndex
     }
     
+    internal var elementCount: Int {
+        storage.reduce(0) { partialResult, next in
+            partialResult + next.count
+        }
+    }
+    
     internal subscript(indexPath: AdjacencyListIndexPath) -> Element {
         get {
             storage[indexPath.row][indexPath.column]

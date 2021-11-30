@@ -29,9 +29,9 @@ internal struct GraphEdgesView: View {
     @Environment(\.graph)
     private var graph: Graph
 
-    private let elementFrames: ElementFramesKey.Value
+    private let elementFrames: [ViewElementGraph.Element: CGRect]
     
-    internal init(elementFrames: ElementFramesKey.Value) {
+    internal init(elementFrames: [ViewElementGraph.Element: CGRect]) {
         self.elementFrames = elementFrames
     }
     
@@ -42,15 +42,33 @@ internal struct GraphEdgesView: View {
                 let isTopDown = (originNode.minY - destinationNode.minY) < 0
                 let origin = isTopDown ? originNode.bottomCenter : originNode.topCenter
                 let destination = isTopDown ? destinationNode.topCenter : destinationNode.bottomCenter
-                let controlPoints = elementFrames.edgeFrames(edge.index).map { isTopDown ? $0.bottomCenter : $0.topCenter }
+                let controlPoints = elementFrames.edgeAnchors(edge.index)
+                    .map { isTopDown ? $0.bottomCenter : $0.topCenter }
+                    .sorted { isTopDown ?  $0.y < $1.y : $0.y > $1.y }
                 EdgePathView(
                     edge: graph[edge.index],
                     directed: graph.directed,
                     origin: origin,
                     destination: destination,
-                    controlPoints: isTopDown ? controlPoints : controlPoints.reversed()
+                    controlPoints: controlPoints
                 )
             }
+        }
+    }
+}
+
+extension Dictionary where Key == ViewElementGraph.Element, Value == CGRect {
+    
+    internal func edgeAnchors(_ edge: EdgeIndex) -> [CGRect] {
+        compactMap { key, value in
+            guard case .edge(let index, _) = key else {
+                return nil
+            }
+            guard index == edge else {
+                return nil
+            }
+            
+            return value
         }
     }
 }

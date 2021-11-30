@@ -55,7 +55,7 @@ internal struct ViewElementGraph {
         
         case node(NodeIndex)
         
-        case edge(EdgeIndex)
+        case edge(index: EdgeIndex, rank: Int)
         
         internal var id: Self {
             self
@@ -124,7 +124,7 @@ fileprivate func addEdgeElemetn(_ storage: inout AdjacencyListGraph<LevelElement
                 let x = preNodeFrame?.minX ?? (storage[path.rank].last!.frame.maxX + levelGap)
                 let y = preNodeFrame?.minY ?? storage[path.rank].first!.frame.minY
                 let newFrame = CGRect(x: x, y: y, width: edgeWidth, height: elementHeight)
-                storage[path.rank].insert(LevelElement(element: .edge(edgeIndex), frame: newFrame), at: path.level)
+                storage[path.rank].insert(LevelElement(element: .edge(index: edgeIndex, rank: path.rank), frame: newFrame), at: path.level)
                 
                 guard storage[path.rank].count > path.rank + 1 else {
                     continue

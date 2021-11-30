@@ -44,6 +44,7 @@ public struct InteractGraphView: View {
         }
         .environment(\._graph, viewGraph.raw)
         .background()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onTapGesture {
             withAnimation {
                 viewGraph.removeFocusNode()
