@@ -1,8 +1,10 @@
 //
-//  EllipseLabelView.swift
+//  NodeView.swift
 //  InteractGraph
 //
-//  Created by limchihi on 22/11/2021.
+//  Created by limchihi on 1/12/2021.
+//
+//  Copyright (c) 2021 Lin Zhiyi <limchihi@foxmail.com>
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +26,7 @@
 
 import SwiftUI
 
-internal struct EllipseLabelView: View {
+internal struct NodeView: View {
     
     private let node: Node
     
@@ -33,15 +35,34 @@ internal struct EllipseLabelView: View {
     }
     
     internal var body: some View {
-        Ellipse()
-            .stroke(style: StrokeStyle(lineWidth: 2, dash: node.dashed ? [5] : []))
-            .optionalForegroundColor(node.borderColor)
-            .label(node.label)
+        Group {
+            let style = StrokeStyle(lineWidth: 2, dash: node.dashed ? [5] : [])
+            switch node.shape {
+            case .ellipse:
+                Ellipse()
+                    .stroke(style: style)
+            case .rectangle:
+                Rectangle()
+                    .stroke(style: style)
+            case .roundedRectangle:
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(style: style)
+            }
+        }
+        .optionalForegroundColor(node.borderColor)
+        .label(node.label)
     }
+    
 }
 
-struct EllipseLabelView_Previews: PreviewProvider {
+
+struct NodeView_Previews: PreviewProvider {
     static var previews: some View {
-        EllipseLabelView(node: .init(id: 1, label: "Hello", borderColor: .blue, dashed: false))
+        VStack {
+            NodeView(node: .init(id: 1, label: "hello", shape: .ellipse, borderColor: .blue, dashed: false))
+            NodeView(node: .init(id: 1, label: "hello", shape: .rectangle, borderColor: .blue, dashed: true))
+            NodeView(node: .init(id: 1, label: "hello", shape: .roundedRectangle, borderColor: .red, dashed: false))
+        }
+        .padding(20)
     }
 }

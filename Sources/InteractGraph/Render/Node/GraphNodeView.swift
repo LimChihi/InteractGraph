@@ -55,7 +55,7 @@ internal struct GraphNodeView: View {
                         Group {
                             switch item {
                             case .node(let nodeIndex):
-                                EllipseLabelView(node: graph[nodeIndex])
+                                NodeView(node: graph[nodeIndex])
                                     .frame(minWidth: 120)
                                     .background()
                                     .onTapGesture {

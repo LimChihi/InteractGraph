@@ -32,13 +32,16 @@ public struct Node: GraphStorageNode {
     
     public let label: String
     
+    public let shape: Shape
+    
     public let borderColor: Color?
     
     public let dashed: Bool
     
-    public init(id: ID, label: String, borderColor: Color? = nil, dashed: Bool = false) {
+    public init(id: ID, label: String, shape: Shape = .ellipse, borderColor: Color? = nil, dashed: Bool = false) {
         self.id = id
         self.label = label
+        self.shape = shape
         self.borderColor = borderColor
         self.dashed = dashed
     }
@@ -59,6 +62,12 @@ public struct Node: GraphStorageNode {
             self.rawValue = value
         }
         
+    }
+    
+    public enum Shape {
+        case ellipse
+        case rectangle
+        case roundedRectangle
     }
     
 }

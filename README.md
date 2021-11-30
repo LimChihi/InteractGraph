@@ -21,6 +21,7 @@ InteractGraph: A weak Graph tool.
 - [x] long label
 - [x] border color
 - [x] dashed border
+- [x] shape: ellipse, rectangle, roundedRectangle
 
 ### Edge Attribute
 
@@ -56,12 +57,13 @@ import SwiftUI
 import InteractGraph
 
 struct ContentView: View {
-	var graph: Graph { ... }
+
+  var graph: Graph { ... }
   var body: some View {
     InteractGraphView(graph: graph)
   }
+  
 }
-
 ```
 
 ## Requirements
