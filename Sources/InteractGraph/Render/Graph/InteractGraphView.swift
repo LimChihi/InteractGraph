@@ -38,17 +38,13 @@ public struct InteractGraphView: View {
             guard case let .node(nodeIndex) = item else {
                 return
             }
-            withAnimation {
-                viewGraph.setFocusNode(nodeIndex)
-            }
+            viewGraph.setFocusNode(nodeIndex)
         }
         .environment(\._graph, viewGraph.raw)
         .background()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onTapGesture {
-            withAnimation {
-                viewGraph.removeFocusNode()
-            }
+            viewGraph.removeFocusNode()
         }
     }
 }
@@ -105,13 +101,18 @@ internal var test_data_graph: Graph {
     let edge3 = Edge(from: node3.id, to: node4.id)
     let edge4 = Edge(from: node2.id, to: node4.id)
     let edge5 = Edge(from: node2.id, to: node5.id)
-    let edge6 = Edge(from: node4.id, to: node1.id)
-
+    let edge6 = Edge(from: node4.id, to: node0.id)
+    let edge7 = Edge(from: node0.id, to: node3.id)
     
-    return Graph(
+    var graph = Graph(
         nodes: [node0, node1, node2, node3, node4, node5],
-        edges: [edge0, edge1, edge2, edge3, edge4, edge5, edge6]
+        edges: [edge0, edge1, edge2, edge3, edge4, edge5]
     )
+    
+    graph.add(edge: edge7)
+    graph.add(edge: edge6)
+    
+    return graph
 }
 
 
