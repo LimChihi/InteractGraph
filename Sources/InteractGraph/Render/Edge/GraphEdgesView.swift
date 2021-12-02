@@ -43,9 +43,9 @@ internal struct GraphEdgesView: View {
                 let origin = isTopDown ? originNode.bottomCenter : originNode.topCenter
                 let destination = isTopDown ? destinationNode.topCenter : destinationNode.bottomCenter
                 let controlPoints = elementFrames.edgeAnchors(edge.index)
-                    .map { isTopDown ? $0.bottomCenter : $0.topCenter }
+                    .map { $0.center }
                     .sorted { isTopDown ?  $0.y < $1.y : $0.y > $1.y }
-                EdgePathView(
+                ArrawEdgeView(
                     edge: graph[edge.index],
                     directed: graph.directed,
                     origin: origin,
