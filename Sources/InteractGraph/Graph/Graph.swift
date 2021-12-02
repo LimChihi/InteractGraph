@@ -88,8 +88,8 @@ public struct Graph {
         storage.add(edges: edges)
     }
     
-    internal func edgeIndex(from: NodeIndex, to: NodeIndex) -> EdgeIndex? {
-        storage.edgeIndex(from: from, to: to)
+    internal func edgeIndices(from: NodeIndex, to: NodeIndex) -> [EdgeIndex] {
+        storage.edgeIndices(from: from, to: to)
     }
 
     internal subscript(edgeIndex: EdgeIndex) -> Edge {

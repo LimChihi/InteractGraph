@@ -117,14 +117,18 @@ fileprivate func addEdgeElemetn(_ storage: inout AdjacencyListGraph<LevelElement
                 continue
             }
             
-            let edgeIndex = graph.edgeIndex(from: nodeIndex, to: outputIndex)!
+            let edgeIndices = graph.edgeIndices(from: nodeIndex, to: outputIndex)
             let newPaths = edgePassByPaths(from: nodePaths[nodeIndex]!, to: nodePaths[outputIndex]!, in: storage)
             for path in newPaths {
                 let preNodeFrame = storage[path.rank].count != path.level ? storage[path].frame : nil
                 let x = preNodeFrame?.minX ?? (storage[path.rank].last!.frame.maxX + levelGap)
                 let y = preNodeFrame?.minY ?? storage[path.rank].first!.frame.minY
-                let newFrame = CGRect(x: x, y: y, width: edgeWidth, height: elementHeight)
-                storage[path.rank].insert(LevelElement(element: .edge(index: edgeIndex, rank: path.rank), frame: newFrame), at: path.level)
+                var newFrame = CGRect(x: x, y: y, width: edgeWidth, height: elementHeight)
+                edgeIndices.enumerated().forEach { offset, edgeIndex in
+                    newFrame.origin.x += CGFloat(offset) * (levelGap + edgeWidth)
+                    let element = LevelElement(element: .edge(index: edgeIndex, rank: path.rank), frame: newFrame)
+                    storage[path.rank].insert(element, at: path.level + offset)
+                }
                 
                 guard storage[path.rank].count > path.rank + 1 else {
                     continue

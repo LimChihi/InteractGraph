@@ -36,6 +36,13 @@ public struct Edge: GraphStorageEdge {
     
     public let dashed: Bool
     
+    public init(from: Node, to: Node, color: Color? = nil, dashed: Bool = false) {
+        self.from = from.id
+        self.to = to.id
+        self.color = color
+        self.dashed = dashed
+    }
+    
     public init(from: Node.ID, to: Node.ID, color: Color? = nil, dashed: Bool = false) {
         self.from = from
         self.to = to
@@ -63,7 +70,7 @@ extension Edge: Hashable {
 extension Edge: CustomStringConvertible {
     
     public var description: String {
-        "Edge: [\(from) -> \(to)]"
+        "Edge: [\(from.rawValue) -> \(to.rawValue)]"
     }
     
 }

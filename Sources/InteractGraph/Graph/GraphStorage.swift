@@ -216,7 +216,8 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
         return indices
     }
     
-    internal func edgeIndex(from: NodeIndex, to: NodeIndex) -> EdgeIndex? {
+    internal func edgeIndices(from: NodeIndex, to: NodeIndex) -> [EdgeIndex] {
+        var result: [EdgeIndex] = []
         for index in edges.indices {
             guard let edge = edges[index] else {
                 continue
@@ -225,9 +226,10 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
                 continue
             }
             
-            return EdgeIndex(index)
+            result.append(EdgeIndex(index))
         }
-        return nil
+        
+        return result
     }
     
     internal subscript(edgeIndex: EdgeIndex) -> EdgeContent {
