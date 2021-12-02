@@ -24,6 +24,8 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+import Foundation
+
 
 internal typealias NodeIndex = GraphStorage<Node, Edge.Attribute>.NodeIndex
 
@@ -147,6 +149,31 @@ public struct Graph {
 
     private mutating func createdNewStorage() {
         storage = storage.makeCopy()
+    }
+    
+    // MARK: - Archive
+    
+    public func archived() -> ArchiveID {
+        fatalError()
+    }
+    
+    public func move(to version: ArchiveID) {
+        fatalError()
+    }
+    
+    public func removeAllArchive() {
+        fatalError()
+    }
+    
+    public struct ArchiveID {
+        
+        /// graph id
+        internal let id: UUID
+        
+        /// archived id
+        /// ++
+        public let version: Int
+        
     }
     
 }
