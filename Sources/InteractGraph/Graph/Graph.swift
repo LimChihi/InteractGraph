@@ -35,7 +35,7 @@ internal typealias OutputEdge = NodeIndex
 
 public struct Graph {
     
-    private let storage: GraphStorage<Node, Edge>
+    private var storage: GraphStorage<Node, Edge>
     
     public init(directed: Bool = true) {
         self.storage = GraphStorage(directed: directed)
@@ -57,10 +57,12 @@ public struct Graph {
     }
     
     public mutating func add(node: Node) {
+        _makeUniqueIfNotUnique()
         storage.add(node: node)
     }
 
     public mutating func add<S: Sequence>(nodes: S) where S.Element == Node {
+        _makeUniqueIfNotUnique()
         storage.add(nodes: nodes)
     }
     
@@ -72,19 +74,25 @@ public struct Graph {
         storage[nodeIndex]
     }
 
+    @discardableResult
     internal mutating func remove(at nodeIndex: NodeIndex) -> Node {
-        storage.remove(at: nodeIndex)
+        _makeUniqueIfNotUnique()
+        return storage.remove(at: nodeIndex)
     }
 
+    @discardableResult
     internal mutating func remove<S: Sequence>(nodesAt nodeIndices: S) -> [Node] where S.Element == NodeIndex {
-        storage.remove(nodesAt: nodeIndices)
+        _makeUniqueIfNotUnique()
+        return storage.remove(nodesAt: nodeIndices)
     }
 
     public mutating func add(edge: Edge) {
+        _makeUniqueIfNotUnique()
         storage.add(edge: edge)
     }
 
     public mutating func add<S: Sequence>(edges: S) where S.Element == Edge {
+        _makeUniqueIfNotUnique()
         storage.add(edges: edges)
     }
     
@@ -108,12 +116,26 @@ public struct Graph {
         storage.outputEdges(for: nodeIndex)
     }
 
+    @discardableResult
     internal mutating func remove(at edgeIndex: EdgeIndex) -> Edge {
-        storage.remove(at: edgeIndex)
+        _makeUniqueIfNotUnique()
+        return storage.remove(at: edgeIndex)
     }
 
+    @discardableResult
     internal mutating func remove<S: Sequence>(edgesAt edgeIndices: S) -> [Edge] where S.Element == EdgeIndex {
-        storage.remove(edgesAt: edgeIndices)
+        _makeUniqueIfNotUnique()
+        return storage.remove(edgesAt: edgeIndices)
+    }
+    
+    private mutating func _makeUniqueIfNotUnique() {
+        if !isKnownUniquelyReferenced(&storage) {
+            createdNewStorage()
+        }
+    }
+
+    private mutating func createdNewStorage() {
+        storage = storage._makeCopy()
     }
     
 }

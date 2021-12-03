@@ -63,6 +63,16 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
         self.edges = []
     }
     
+    private init(directed: Bool, nodes: [Node<NodeContent>?], edges: [Edge<EdgeContent>?]) {
+        self.directed = directed
+        self.nodes = nodes
+        self.edges = edges
+    }
+
+    internal func _makeCopy() -> GraphStorage {
+        GraphStorage(directed: directed, nodes: nodes, edges: edges)
+    }
+    
     internal var allEdges: [(index: EdgeIndex, from: NodeIndex, to: NodeIndex)] {
         var result: [(index: EdgeIndex, from: NodeIndex, to: NodeIndex)] = []
         result.reserveCapacity(edges.count)
