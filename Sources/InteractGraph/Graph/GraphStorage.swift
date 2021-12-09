@@ -24,6 +24,7 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+import Collections
 
 internal protocol GraphStorageEdge {
     
@@ -53,24 +54,32 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
     
     internal let directed: Bool
     
-    private var nodes: [Node<NodeContent>?]
+    private var nodes: ContiguousArray<Node<NodeContent>?>
     
-    private var edges: [Edge<EdgeContent>?]
+    private var edges: ContiguousArray<Edge<EdgeContent>?>
+    
+    internal private(set) var nodesCount: Int
+    
+    internal private(set) var edgesCount: Int
     
     internal init(directed: Bool) {
         self.directed = directed
         self.nodes = []
         self.edges = []
+        self.nodesCount = 0
+        self.edgesCount = 0
     }
     
-    private init(directed: Bool, nodes: [Node<NodeContent>?], edges: [Edge<EdgeContent>?]) {
+    private init(directed: Bool, nodes: ContiguousArray<Node<NodeContent>?>, edges: ContiguousArray<Edge<EdgeContent>?>, nodesCount: Int, edgesCount: Int) {
         self.directed = directed
         self.nodes = nodes
         self.edges = edges
+        self.nodesCount = nodesCount
+        self.edgesCount = edgesCount
     }
 
     internal func _makeCopy() -> GraphStorage {
-        GraphStorage(directed: directed, nodes: nodes, edges: edges)
+        GraphStorage(directed: directed, nodes: nodes, edges: edges, nodesCount: nodesCount, edgesCount: edgesCount)
     }
     
     internal var allEdges: [(index: EdgeIndex, from: NodeIndex, to: NodeIndex)] {
@@ -89,6 +98,7 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
     
     @discardableResult
     internal func add(node: NodeContent) -> NodeIndex {
+        defer { nodesCount += 1 }
         let index = nodes.firstIndex(where: { $0 == nil })
         
         let newNode = Node(node)
@@ -103,11 +113,11 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
     }
     
     @discardableResult
-    internal func add<S: Sequence>(nodes: S) -> [NodeIndex] where S.Element == NodeContent {
-        
+    internal func add<S: Sequence>(nodes: S) -> ContiguousArray<NodeIndex> where S.Element == NodeContent {
         var nodesIterator = nodes.makeIterator()
         var current = nodesIterator.next()
-        var indices: [NodeIndex] = []
+        var indices: ContiguousArray<NodeIndex> = []
+        defer { nodesCount += indices.count }
         indices.reserveCapacity(nodes.underestimatedCount)
         
         for index in self.nodes.indices {
@@ -151,6 +161,7 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
     
     @discardableResult
     internal func remove(at nodeIndex: NodeIndex) -> NodeContent {
+        defer { nodesCount -= 1 }
         let node = nodes[nodeIndex]!
         
         node.inputs.forEach {
@@ -176,14 +187,17 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
     }
     
     @discardableResult
-    internal func remove<S: Sequence>(nodesAt nodeIndices: S) -> [NodeContent] where S.Element == NodeIndex {
-        nodeIndices.map { remove(at: $0) }
+    internal func remove<S: Sequence>(nodesAt nodeIndices: S) -> ContiguousArray<NodeContent> where S.Element == NodeIndex {
+        let deletedNodes = nodeIndices.map { remove(at: $0) }
+        nodesCount -= deletedNodes.count
+        return ContiguousArray(deletedNodes)
     }
     
     // MARK: - Edge
     
     @discardableResult
     internal func add(edge: EdgeContent) -> EdgeIndex {
+        defer { edgesCount -= 1 }
         let edge = prepareGraphEdge(for: edge)
         
         let index = edges.firstIndex(where: { $0 == nil })
@@ -198,10 +212,11 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
     }
     
     @discardableResult
-    internal func add<S: Sequence>(edges: S) -> [EdgeIndex] where S.Element == EdgeContent {
+    internal func add<S: Sequence>(edges: S) -> ContiguousArray<EdgeIndex> where S.Element == EdgeContent {
         var edgesIterator = edges.makeIterator()
         var current = edgesIterator.next()
-        var indices: [EdgeIndex] = []
+        var indices: ContiguousArray<EdgeIndex> = []
+        defer { edgesCount += indices.count }
         indices.reserveCapacity(edges.underestimatedCount)
         
         for index in self.edges.indices {
@@ -269,6 +284,7 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
     
     @discardableResult
     internal func remove(at edgeIndex: EdgeIndex) -> EdgeContent {
+        defer { edgesCount -= 1 }
         let edge = edges[edgeIndex]!
         removeNodeEdge(from: edge.fromNodeIndex, to: edge.toNodeIndex)
         edges[edgeIndex] = nil
@@ -278,7 +294,46 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
     
     @discardableResult
     internal func remove<S: Sequence>(edgesAt edgeIndices: S) -> [EdgeContent] where S.Element == EdgeIndex {
-        edgeIndices.map { remove(at: $0) }
+        let deletedEdges = edgeIndices.map { remove(at: $0) }
+        edgesCount -= deletedEdges.count
+        return deletedEdges
+    }
+    
+    // MARK: - Connected Graph
+    
+    internal func getConnectedSubgraphs() -> ContiguousArray<SubgraphStorage> {
+        var result = ContiguousArray<SubgraphStorage>()
+        var passByNode = Set<NodeIndex>()
+        
+        for index in nodes.indices {
+
+            let nodeIndex = NodeIndex(index)
+            guard !passByNode.contains(nodeIndex) else {
+                continue
+            }
+            
+            let subgraph = SubgraphStorage(graph: self)
+            var queue: Deque<NodeIndex> = [nodeIndex]
+            while let first = queue.popFirst() {
+                guard !passByNode.contains(nodeIndex) else {
+                    continue
+                }
+                guard let node = nodes[first] else {
+                    continue
+                }
+                
+                queue.append(contentsOf: node.outputs.filter({ !passByNode.contains($0) }))
+                queue.append(contentsOf: node.inputs.filter({ !passByNode.contains($0) }))
+                passByNode.insert(nodeIndex)
+                subgraph.nodeIndices.append(nodeIndex)
+            }
+            
+            result.append(subgraph)
+            if passByNode.count == nodesCount {
+                break
+            }
+        }
+        return result
     }
     
     // MARK: - helper

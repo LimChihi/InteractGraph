@@ -1,8 +1,8 @@
 //
-//  TypeIndex.swift
+//  SubgraphStorage.swift
 //  InteractGraph
 //
-//  Created by limchihi on 28/11/2021.
+//  Created by limchihi on 9/12/2021.
 //
 //  Copyright (c) 2021 Lin Zhiyi <limchihi@foxmail.com>
 //
@@ -23,52 +23,21 @@
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
+   
 
-public struct TypeIndex<T>: RawRepresentable, ExpressibleByIntegerLiteral, Hashable, Identifiable {
+extension GraphStorage {
     
-    public let rawValue: Int
-    
-    public init(_ rawValue: Int) {
-        self.rawValue = rawValue
-    }
-
-    public init(rawValue: Int) {
-        self.rawValue = rawValue
-    }
-    
-    public init(integerLiteral value: Int) {
-        self.rawValue = value
-    }
-    
-    public var id: RawValue {
-        rawValue
-    }
-
-}
-
-
-extension Array {
-    
-    internal subscript<T>(index: TypeIndex<T>) -> Element {
-        get {
-            self[index.rawValue]
+    internal class SubgraphStorage {
+        
+        internal unowned let graph: GraphStorage
+        
+        internal var nodeIndices: ContiguousArray<NodeIndex>
+        
+        internal init(graph: GraphStorage, nodeIndices: ContiguousArray<NodeIndex> = []) {
+            self.graph = graph
+            self.nodeIndices = nodeIndices
         }
-        set {
-            self[index.rawValue] = newValue
-        }
-    }
-    
-}
-
-extension ContiguousArray {
-    
-    internal subscript<T>(index: TypeIndex<T>) -> Element {
-        get {
-            self[index.rawValue]
-        }
-        set {
-            self[index.rawValue] = newValue
-        }
+        
     }
     
 }

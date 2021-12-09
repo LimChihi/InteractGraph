@@ -57,12 +57,12 @@ public struct Graph {
     }
     
     public mutating func add(node: Node) {
-        _makeUniqueIfNotUnique()
+        makeStorageUniqueIfNotUnique()
         storage.add(node: node)
     }
 
     public mutating func add<S: Sequence>(nodes: S) where S.Element == Node {
-        _makeUniqueIfNotUnique()
+        makeStorageUniqueIfNotUnique()
         storage.add(nodes: nodes)
     }
     
@@ -76,23 +76,23 @@ public struct Graph {
 
     @discardableResult
     internal mutating func remove(at nodeIndex: NodeIndex) -> Node {
-        _makeUniqueIfNotUnique()
+        makeStorageUniqueIfNotUnique()
         return storage.remove(at: nodeIndex)
     }
 
     @discardableResult
-    internal mutating func remove<S: Sequence>(nodesAt nodeIndices: S) -> [Node] where S.Element == NodeIndex {
-        _makeUniqueIfNotUnique()
+    internal mutating func remove<S: Sequence>(nodesAt nodeIndices: S) -> ContiguousArray<Node> where S.Element == NodeIndex {
+        makeStorageUniqueIfNotUnique()
         return storage.remove(nodesAt: nodeIndices)
     }
 
     public mutating func add(edge: Edge) {
-        _makeUniqueIfNotUnique()
+        makeStorageUniqueIfNotUnique()
         storage.add(edge: edge)
     }
 
     public mutating func add<S: Sequence>(edges: S) where S.Element == Edge {
-        _makeUniqueIfNotUnique()
+        makeStorageUniqueIfNotUnique()
         storage.add(edges: edges)
     }
     
@@ -118,17 +118,17 @@ public struct Graph {
 
     @discardableResult
     internal mutating func remove(at edgeIndex: EdgeIndex) -> Edge {
-        _makeUniqueIfNotUnique()
+        makeStorageUniqueIfNotUnique()
         return storage.remove(at: edgeIndex)
     }
 
     @discardableResult
     internal mutating func remove<S: Sequence>(edgesAt edgeIndices: S) -> [Edge] where S.Element == EdgeIndex {
-        _makeUniqueIfNotUnique()
+        makeStorageUniqueIfNotUnique()
         return storage.remove(edgesAt: edgeIndices)
     }
     
-    private mutating func _makeUniqueIfNotUnique() {
+    private mutating func makeStorageUniqueIfNotUnique() {
         if !isKnownUniquelyReferenced(&storage) {
             createdNewStorage()
         }
