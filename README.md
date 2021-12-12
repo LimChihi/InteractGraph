@@ -38,9 +38,9 @@ import InteractGraph
 
 var graph: Graph {
 
-  let node0 = Node(id: 0x0, label: "0x0: TheBeginningOfEverything")
+  let node0 = Node(label: "0x0: TheBeginningOfEverything")
   ...
-  let node42 = Node(id: 0x42, label: "0x42: TheAnswerToEverything")
+  let node42 = Node(label: "0x42: TheAnswerToEverything")
   
   let edge0 = Edge(from: node0, to: node42)
   ...

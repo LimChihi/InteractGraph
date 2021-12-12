@@ -27,8 +27,10 @@
 import SwiftUI
 
 public struct Node: GraphStorageNode {
-
-    public let id: ID
+    
+    public typealias ID = String
+    
+    public let id: String
     
     public let label: String
     
@@ -38,30 +40,20 @@ public struct Node: GraphStorageNode {
     
     public let dashed: Bool
     
-    public init(id: ID, label: String, shape: Shape = .ellipse, borderColor: Color? = nil, dashed: Bool = false) {
-        self.id = id
+    public init(label: String, shape: Shape = .ellipse, borderColor: Color? = nil, dashed: Bool = false) {
+        self.id = label
         self.label = label
         self.shape = shape
         self.borderColor = borderColor
         self.dashed = dashed
     }
     
-    public struct ID: RawRepresentable, ExpressibleByIntegerLiteral, Hashable {
-        
-        public let rawValue: UInt64
-        
-        public init(_ rawValue: UInt64) {
-            self.rawValue = rawValue
-        }
-
-        public init(rawValue: UInt64) {
-            self.rawValue = rawValue
-        }
-        
-        public init(integerLiteral value: UInt64) {
-            self.rawValue = value
-        }
-        
+    public init(id: String, label: String, shape: Shape = .ellipse, borderColor: Color? = nil, dashed: Bool = false) {
+        self.id = id
+        self.label = label
+        self.shape = shape
+        self.borderColor = borderColor
+        self.dashed = dashed
     }
     
     public enum Shape {

@@ -59,9 +59,9 @@ internal struct NodeView: View {
 struct NodeView_Previews: PreviewProvider {
     static var previews: some View {
         VStack {
-            NodeView(node: .init(id: 1, label: "hello", shape: .ellipse, borderColor: .blue, dashed: false))
-            NodeView(node: .init(id: 1, label: "hello", shape: .rectangle, borderColor: .blue, dashed: true))
-            NodeView(node: .init(id: 1, label: "hello", shape: .roundedRectangle, borderColor: .red, dashed: false))
+            NodeView(node: .init(label: "hello1", shape: .ellipse, borderColor: .blue, dashed: false))
+            NodeView(node: .init(label: "hello2", shape: .rectangle, borderColor: .blue, dashed: true))
+            NodeView(node: .init(label: "hello3", shape: .roundedRectangle, borderColor: .red, dashed: false))
         }
         .padding(20)
     }

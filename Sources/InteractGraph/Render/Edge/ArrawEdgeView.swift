@@ -160,7 +160,7 @@ struct EdgePathView_PreViews: PreviewProvider {
     
     static var previews: some View {
         ArrawEdgeView(
-            edge: .init(from: 0, to: 1, color: nil),
+            edge: .init(from: "0x0", to: "0x1", color: nil),
             directed: true,
             origin: .init(x: 200, y: 50),
             destination: .init(x: 200, y: 350),

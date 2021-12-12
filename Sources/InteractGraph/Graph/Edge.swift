@@ -70,7 +70,7 @@ extension Edge: Hashable {
 extension Edge: CustomStringConvertible {
     
     public var description: String {
-        "Edge: [\(from.rawValue) -> \(to.rawValue)]"
+        "Edge: [\(from) -> \(to)]"
     }
     
 }
