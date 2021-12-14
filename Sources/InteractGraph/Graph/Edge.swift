@@ -26,42 +26,32 @@
 
 import SwiftUI
 
-public struct Edge: GraphStorageEdge {
+public struct Edge: GraphStorageEdge, Hashable {
 
     public let from: Node.ID
     
     public let to: Node.ID
     
-    public let color: Color?
-    
-    public let dashed: Bool
+    internal let attribute: Attribute
     
     public init(from: Node, to: Node, color: Color? = nil, dashed: Bool = false) {
         self.from = from.id
         self.to = to.id
-        self.color = color
-        self.dashed = dashed
+        self.attribute = Attribute(color: color, dashed: dashed)
     }
     
     public init(from: Node.ID, to: Node.ID, color: Color? = nil, dashed: Bool = false) {
         self.from = from
         self.to = to
-        self.color = color
-        self.dashed = dashed
+        self.attribute = Attribute(color: color, dashed: dashed)
     }
     
-}
-
-
-extension Edge: Hashable {
-    
-    public static func == (lhs: Edge, rhs: Edge) -> Bool {
-        lhs.from == rhs.from && lhs.to == rhs.to
-    }
-    
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(from)
-        hasher.combine(to)
+    internal struct Attribute: Hashable {
+        
+        internal let color: Color?
+        
+        internal let dashed: Bool
+        
     }
     
 }

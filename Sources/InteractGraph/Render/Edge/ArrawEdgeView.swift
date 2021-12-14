@@ -28,7 +28,7 @@ import SwiftUI
 
 internal struct ArrawEdgeView: View {
     
-    private let edge: Edge
+    private let edge: Edge.Attribute
 
     private let directed: Bool
     
@@ -38,7 +38,7 @@ internal struct ArrawEdgeView: View {
     
     private let controlPoints: [CGPoint]
     
-    internal init(edge: Edge, directed: Bool, origin: CGPoint, destination: CGPoint, controlPoints: [CGPoint]) {
+    internal init(edge: Edge.Attribute, directed: Bool, origin: CGPoint, destination: CGPoint, controlPoints: [CGPoint]) {
         self.edge = edge
         self.directed = directed
         self.origin = origin
@@ -49,7 +49,7 @@ internal struct ArrawEdgeView: View {
     internal var body: some View {
         ZStack {
             EdgeLine(origin: origin, destination: destination, controlPoints: controlPoints)
-            .stroke(style: StrokeStyle(lineWidth: 2, lineJoin: .round, dash: edge.dashed ? [5] : []))
+                .stroke(style: StrokeStyle(lineWidth: 2, lineJoin: .round, dash: edge.dashed ? [5] : []))
             if directed {
                 let origin = controlPoints.last.map {
                     CGPoint(x: controlPoints.count % 2 == 0 ? $0.x : $0.x * coefficient, y: $0.y)
@@ -160,7 +160,7 @@ struct EdgePathView_PreViews: PreviewProvider {
     
     static var previews: some View {
         ArrawEdgeView(
-            edge: .init(from: "0x0", to: "0x1", color: nil),
+            edge: .init(color: .blue, dashed: false),
             directed: true,
             origin: .init(x: 200, y: 50),
             destination: .init(x: 200, y: 350),

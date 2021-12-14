@@ -28,16 +28,16 @@ import SwiftUI
 
 internal struct NodeView: View {
     
-    private let node: Node
+    private let nodeAttribute: Node.Attribute
     
-    internal init(node: Node) {
-        self.node = node
+    internal init(node: Node.Attribute) {
+        self.nodeAttribute = node
     }
     
     internal var body: some View {
         Group {
-            let style = StrokeStyle(lineWidth: 2, dash: node.dashed ? [5] : [])
-            switch node.shape {
+            let style = StrokeStyle(lineWidth: 2, dash: nodeAttribute.dashed ? [5] : [])
+            switch nodeAttribute.shape {
             case .ellipse:
                 Ellipse()
                     .stroke(style: style)
@@ -49,8 +49,8 @@ internal struct NodeView: View {
                     .stroke(style: style)
             }
         }
-        .optionalForegroundColor(node.borderColor)
-        .label(node.label)
+        .optionalForegroundColor(nodeAttribute.borderColor)
+        .label(nodeAttribute.label)
     }
     
 }

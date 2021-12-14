@@ -32,28 +32,28 @@ public struct Node: GraphStorageNode {
     
     public let id: String
     
-    public let label: String
-    
-    public let shape: Shape
-    
-    public let borderColor: Color?
-    
-    public let dashed: Bool
+    internal let attribute: Attribute
     
     public init(label: String, shape: Shape = .ellipse, borderColor: Color? = nil, dashed: Bool = false) {
         self.id = label
-        self.label = label
-        self.shape = shape
-        self.borderColor = borderColor
-        self.dashed = dashed
+        self.attribute = Attribute(label: label, shape: shape, borderColor: borderColor, dashed: dashed)
     }
     
     public init(id: String, label: String, shape: Shape = .ellipse, borderColor: Color? = nil, dashed: Bool = false) {
         self.id = id
-        self.label = label
-        self.shape = shape
-        self.borderColor = borderColor
-        self.dashed = dashed
+        self.attribute = Attribute(label: label, shape: shape, borderColor: borderColor, dashed: dashed)
+    }
+    
+    internal struct Attribute: Hashable {
+        
+        internal let label: String
+        
+        internal let shape: Shape
+        
+        internal let borderColor: Color?
+        
+        internal let dashed: Bool
+        
     }
     
     public enum Shape {
