@@ -54,42 +54,34 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
     
     internal let directed: Bool
     
-    private var nodes: ContiguousArray<Node<NodeContent>?>
+    private var nodes: OptionalElementArray<Node<NodeContent>>
     
-    private var edges: ContiguousArray<Edge<EdgeContent>?>
-    
-    internal private(set) var nodesCount: Int
-    
-    internal private(set) var edgesCount: Int
+    private var edges: OptionalElementArray<Edge<EdgeContent>>
     
     internal init(directed: Bool) {
         self.directed = directed
         self.nodes = []
         self.edges = []
-        self.nodesCount = 0
-        self.edgesCount = 0
     }
     
-    private init(directed: Bool, nodes: ContiguousArray<Node<NodeContent>?>, edges: ContiguousArray<Edge<EdgeContent>?>, nodesCount: Int, edgesCount: Int) {
+    private init(directed: Bool, nodes: OptionalElementArray<Node<NodeContent>>, edges: OptionalElementArray<Edge<EdgeContent>>) {
         self.directed = directed
         self.nodes = nodes
         self.edges = edges
-        self.nodesCount = nodesCount
-        self.edgesCount = edgesCount
     }
 
     internal func _makeCopy() -> GraphStorage {
-        GraphStorage(directed: directed, nodes: nodes, edges: edges, nodesCount: nodesCount, edgesCount: edgesCount)
+        GraphStorage(directed: directed, nodes: nodes, edges: edges)
     }
+    
+//    internal var allEdges: [EdgeIndex] { }
     
     internal var allEdges: [(index: EdgeIndex, from: NodeIndex, to: NodeIndex)] {
         var result: [(index: EdgeIndex, from: NodeIndex, to: NodeIndex)] = []
         result.reserveCapacity(edges.count)
         for index in edges.indices {
-            guard let edge = edges[index] else {
-                continue
-            }
-            result.append((EdgeIndex(index), edge.fromNodeIndex, edge.toNodeIndex))
+            let edge = edges[index]
+            result.append((index.cast(), edge.fromNodeIndex, edge.toNodeIndex))
         }
         return result
     }
@@ -98,44 +90,18 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
     
     @discardableResult
     internal func add(node: NodeContent) -> NodeIndex {
-        defer { nodesCount += 1 }
-        let index = nodes.firstIndex(where: { $0 == nil })
-        
-        let newNode = Node(node)
-        if let index = index {
-            nodes[index] = newNode
-            return NodeIndex(index)
-        } else {
-            let index = nodes.endIndex
-            nodes.append(newNode)
-            return NodeIndex(index)
-        }
+        nodes.append(Node(node)).cast()
     }
     
     @discardableResult
-    internal func add<S: Sequence>(nodes: S) -> ContiguousArray<NodeIndex> where S.Element == NodeContent {
-        var nodesIterator = nodes.makeIterator()
+    internal func add<S: Sequence>(nodes newNodes: S) -> ContiguousArray<NodeIndex> where S.Element == NodeContent {
+        var nodesIterator = newNodes.makeIterator()
         var current = nodesIterator.next()
         var indices: ContiguousArray<NodeIndex> = []
-        defer { nodesCount += indices.count }
         indices.reserveCapacity(nodes.underestimatedCount)
         
-        for index in self.nodes.indices {
-            guard let node = current else {
-                break
-            }
-            guard self.nodes[index] == nil else {
-                continue
-            }
-            self.nodes[index] = Node(node)
-            indices.append(NodeIndex(index))
-            current = nodesIterator.next()
-        }
-        
         while let node = current {
-            let index = self.nodes.endIndex
-            self.nodes.append(Node(node))
-            indices.append(NodeIndex(index))
+            indices.append(nodes.append(Node(node)).cast())
             current = nodesIterator.next()
         }
         
@@ -143,16 +109,15 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
     }
     
     internal subscript(nodeIndex: NodeIndex) -> NodeContent {
-        nodes[nodeIndex]!.content
+        nodes[nodeIndex.cast()].content
     }
     
     internal func forEach(body: (NodeContent, [InputEdge], [OutputEdge], NodeIndex, inout Bool) -> ()) {
         var stop = false
+        
         for index in nodes.indices {
-            guard let node = nodes[index] else {
-                continue
-            }
-            body(node.content, node.inputs, node.outputs, NodeIndex(index), &stop)
+            let node = nodes[index]
+            body(node.content, node.inputs, node.outputs, index.cast(), &stop)
             if stop {
                 return
             }
@@ -161,8 +126,7 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
     
     @discardableResult
     internal func remove(at nodeIndex: NodeIndex) -> NodeContent {
-        defer { nodesCount -= 1 }
-        let node = nodes[nodeIndex]!
+        let node = nodes[nodeIndex.cast()]
         
         node.inputs.forEach {
             removeNodeEdge(from: nodeIndex, to: $0)
@@ -173,23 +137,20 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
         }
         
         for index in edges.indices {
-            guard let edge = edges[index] else {
-                continue
-            }
+            let edge = edges[index]
             guard edge.fromNodeIndex == nodeIndex || edge.toNodeIndex == nodeIndex else {
                 continue
             }
-            edges[index] = nil
+            edges.remove(at: index)
         }
         
-        nodes[nodeIndex] = nil
+        nodes.remove(at: nodeIndex.cast())
         return node.content
     }
     
     @discardableResult
     internal func remove<S: Sequence>(nodesAt nodeIndices: S) -> ContiguousArray<NodeContent> where S.Element == NodeIndex {
         let deletedNodes = nodeIndices.map { remove(at: $0) }
-        nodesCount -= deletedNodes.count
         return ContiguousArray(deletedNodes)
     }
     
@@ -197,44 +158,19 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
     
     @discardableResult
     internal func add(edge: EdgeContent) -> EdgeIndex {
-        defer { edgesCount -= 1 }
         let edge = prepareGraphEdge(for: edge)
-        
-        let index = edges.firstIndex(where: { $0 == nil })
-        if let index = index {
-            edges[index] = edge
-            return EdgeIndex(index)
-        } else {
-            let index = edges.endIndex
-            edges.append(edge)
-            return EdgeIndex(index)
-        }
+        return edges.append(edge).cast()
     }
     
     @discardableResult
-    internal func add<S: Sequence>(edges: S) -> ContiguousArray<EdgeIndex> where S.Element == EdgeContent {
-        var edgesIterator = edges.makeIterator()
+    internal func add<S: Sequence>(edges newEdges: S) -> ContiguousArray<EdgeIndex> where S.Element == EdgeContent {
+        var edgesIterator = newEdges.makeIterator()
         var current = edgesIterator.next()
         var indices: ContiguousArray<EdgeIndex> = []
-        defer { edgesCount += indices.count }
-        indices.reserveCapacity(edges.underestimatedCount)
+        indices.reserveCapacity(newEdges.underestimatedCount)
         
-        for index in self.edges.indices {
-            guard let edge = current else {
-                break
-            }
-            guard self.edges[index] == nil else {
-                continue
-            }
-            self.edges[index] = prepareGraphEdge(for: edge)
-            indices.append(EdgeIndex(index))
-            current = edgesIterator.next()
-        }
-
         while let edge = current {
-            let index = self.edges.endIndex
-            self.edges.append(prepareGraphEdge(for: edge))
-            indices.append(EdgeIndex(index))
+            indices.append(edges.append(prepareGraphEdge(for: edge)).cast())
             current = edgesIterator.next()
         }
         
@@ -244,30 +180,26 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
     internal func edgeIndices(from: NodeIndex, to: NodeIndex) -> [EdgeIndex] {
         var result: [EdgeIndex] = []
         for index in edges.indices {
-            guard let edge = edges[index] else {
-                continue
-            }
+            let edge = edges[index]
             guard edge.fromNodeIndex == from && edge.toNodeIndex == to else {
                 continue
             }
             
-            result.append(EdgeIndex(index))
+            result.append(index.cast())
         }
         
         return result
     }
     
     internal subscript(edgeIndex: EdgeIndex) -> EdgeContent {
-        edges[edgeIndex]!.content
+        edges[edgeIndex.cast()].content
     }
     
     internal func forEach(body: (EdgeContent, EdgeIndex, inout Bool) -> ()) {
         var stop = false
         for index in edges.indices {
-            guard let edge = edges[index] else {
-                continue
-            }
-            body(edge.content, EdgeIndex(index), &stop)
+            let edge = edges[index]
+            body(edge.content, index.cast(), &stop)
             if stop {
                 return
             }
@@ -275,28 +207,25 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
     }
     
     internal func inputEdges(for nodeIndex: NodeIndex) -> [InputEdge] {
-        nodes[nodeIndex]!.inputs
+        nodes[nodeIndex.cast()].inputs
     }
     
     internal func outputEdges(for nodeIndex: NodeIndex) -> [OutputEdge] {
-        nodes[nodeIndex]!.outputs
+        nodes[nodeIndex.cast()].outputs
     }
     
     @discardableResult
     internal func remove(at edgeIndex: EdgeIndex) -> EdgeContent {
-        defer { edgesCount -= 1 }
-        let edge = edges[edgeIndex]!
+        let edge = edges[edgeIndex.cast()]
         removeNodeEdge(from: edge.fromNodeIndex, to: edge.toNodeIndex)
-        edges[edgeIndex] = nil
+        edges.remove(at: edgeIndex.cast())
         
         return edge.content
     }
     
     @discardableResult
     internal func remove<S: Sequence>(edgesAt edgeIndices: S) -> [EdgeContent] where S.Element == EdgeIndex {
-        let deletedEdges = edgeIndices.map { remove(at: $0) }
-        edgesCount -= deletedEdges.count
-        return deletedEdges
+        edgeIndices.map { remove(at: $0) }
     }
     
     // MARK: - Connected Graph
@@ -307,29 +236,26 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
         
         for index in nodes.indices {
 
-            let nodeIndex = NodeIndex(index)
-            guard !passByNode.contains(nodeIndex) else {
+            guard !passByNode.contains(index.cast()) else {
                 continue
             }
             
             let subgraph = SubgraphStorage(graph: self)
-            var queue: Deque<NodeIndex> = [nodeIndex]
+            var queue: Deque<NodeIndex> = [index.cast()]
             while let first = queue.popFirst() {
-                guard !passByNode.contains(nodeIndex) else {
+                guard !passByNode.contains(index.cast()) else {
                     continue
                 }
-                guard let node = nodes[first] else {
-                    continue
-                }
+                let node = nodes[first.cast()]
                 
                 queue.append(contentsOf: node.outputs.filter({ !passByNode.contains($0) }))
                 queue.append(contentsOf: node.inputs.filter({ !passByNode.contains($0) }))
-                passByNode.insert(nodeIndex)
-                subgraph.nodeIndices.append(nodeIndex)
+                passByNode.insert(index.cast())
+                subgraph.nodeIndices.append(index.cast())
             }
             
             result.append(subgraph)
-            if passByNode.count == nodesCount {
+            if passByNode.count == nodes.count {
                 break
             }
         }
@@ -339,12 +265,12 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
     // MARK: - helper
     
     private func removeNodeEdge(from: NodeIndex, to: NodeIndex) {
-        if let outputIndex = nodes[from]?.outputs.firstIndex(where: { $0 == to }) {
-            nodes[from]?.outputs.remove(at: outputIndex)
+        if let outputIndex = nodes[from.cast()].outputs.firstIndex(where: { $0 == to }) {
+            nodes[from.cast()].outputs.remove(at: outputIndex)
         }
         
-        if let inputIndex = nodes[to]?.inputs.firstIndex(where: { $0 == from }) {
-            nodes[to]?.inputs.remove(at: inputIndex)
+        if let inputIndex = nodes[to.cast()].inputs.firstIndex(where: { $0 == from }) {
+            nodes[to.cast()].inputs.remove(at: inputIndex)
         }
     }
     
@@ -352,21 +278,22 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
         var index0: NodeIndex?
         var index1: NodeIndex?
         
-        for (index, node) in nodes.enumerated() {
-            if node?.content.id == id0 {
+        for index in nodes.indices {
+            let node = nodes[index]
+            if node.content.id == id0 {
                 if let index1 = index1 {
-                    return (NodeIndex(index), index1)
+                    return (index.cast(), index1)
                 } else {
-                    index0 = NodeIndex(index)
+                    index0 = index.cast()
                     continue
                 }
             }
             
-            if node?.content.id == id1 {
+            if node.content.id == id1 {
                 if let index0 = index0 {
-                    return (index0, NodeIndex(index))
+                    return (index0, index.cast())
                 } else {
-                    index1 = NodeIndex(index)
+                    index1 = index.cast()
                     continue
                 }
             }
@@ -381,8 +308,8 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
             preconditionFailure("Nodes Not Found")
         }
         
-        nodes[fromNodeIndex]?.outputs.append(toNodeIndex)
-        nodes[toNodeIndex]?.inputs.append(fromNodeIndex)
+        nodes[fromNodeIndex.cast()].outputs.append(toNodeIndex)
+        nodes[toNodeIndex.cast()].inputs.append(fromNodeIndex)
         return Edge(fromNodeIndex: fromNodeIndex, toNodeIndex: toNodeIndex, content: edge)
     }
     

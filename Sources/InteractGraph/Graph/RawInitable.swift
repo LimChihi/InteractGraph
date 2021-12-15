@@ -1,8 +1,8 @@
 //
-//  TypeIndex.swift
+//  RawInitable.swift
 //  InteractGraph
 //
-//  Created by limchihi on 28/11/2021.
+//  Created by limchihi on 15/12/2021.
 //
 //  Copyright (c) 2021 Lin Zhiyi <limchihi@foxmail.com>
 //
@@ -24,67 +24,47 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-
-internal struct TypeIndex<T>: RawInitable, ExpressibleByIntegerLiteral, Hashable, Identifiable, Comparable {
+   
+internal protocol RawInitable: RawRepresentable {
     
-    internal let rawValue: Int
+    associatedtype RawValue
     
-    @inlinable
-    internal init(_ rawValue: Int) {
-        self.rawValue = rawValue
-    }
-
-    @inlinable
-    internal init(rawValue: Int) {
-        self.rawValue = rawValue
-    }
-    
-    @inlinable
-    internal init(integerLiteral value: Int) {
-        self.rawValue = value
-    }
-    
-    @inlinable
-    internal var id: RawValue {
-        rawValue
-    }
-    
-    @inline(__always)
-    internal func cast<NewType>() -> TypeIndex<NewType> {
-        TypeIndex<NewType>(rawValue)
-    }
-    
-    @inlinable
-    internal static func < (lhs: TypeIndex<T>, rhs: TypeIndex<T>) -> Bool {
-        lhs.rawValue < rhs.rawValue
-    }
-
+    init(_ rawValue: RawValue)
 }
 
 
-extension Array {
+extension RawInitable where RawValue: AdditiveArithmetic {
     
-    internal subscript<T>(index: TypeIndex<T>) -> Element {
-        get {
-            self[index.rawValue]
-        }
-        set {
-            self[index.rawValue] = newValue
-        }
+    internal static func + (lhs: Self, rhs: Self) -> Self {
+        self.init(lhs.rawValue + rhs.rawValue)
     }
     
-}
-
-
-extension ContiguousArray {
+    internal static func + (lhs: Self, rhs: RawValue) -> Self {
+        self.init(lhs.rawValue + rhs)
+    }
     
-    internal subscript<T>(index: TypeIndex<T>) -> Element {
-        get {
-            self[index.rawValue]
-        }
-        set {
-            self[index.rawValue] = newValue
-        }
+    internal static func += (lhs: inout Self, rhs: Self) {
+        lhs = lhs + rhs
+    }
+    
+    internal static func += (lhs: inout Self, rhs: RawValue) {
+        lhs = lhs + rhs
+    }
+    
+    internal static func - (lhs: Self, rhs: Self) -> Self {
+        return self.init(lhs.rawValue - rhs.rawValue)
+    }
+    
+    internal static func - (lhs: Self, rhs: RawValue) -> Self {
+        self.init(lhs.rawValue - rhs)
+    }
+    
+    internal static func -= (lhs: inout Self, rhs: Self) {
+        lhs = lhs - rhs
+    }
+    
+    internal static func -= (lhs: inout Self, rhs: RawValue) {
+        lhs = lhs - rhs
     }
     
 }
