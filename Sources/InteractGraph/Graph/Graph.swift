@@ -25,9 +25,9 @@
 //  THE SOFTWARE.
 
 
-internal typealias NodeIndex = GraphStorage<Node, Edge>.NodeIndex
+internal typealias NodeIndex = GraphStorage<Node, Edge.Attribute>.NodeIndex
 
-internal typealias EdgeIndex = GraphStorage<Node, Edge>.EdgeIndex
+internal typealias EdgeIndex = GraphStorage<Node, Edge.Attribute>.EdgeIndex
 
 internal typealias InputEdge = NodeIndex
 
@@ -35,43 +35,53 @@ internal typealias OutputEdge = NodeIndex
 
 public struct Graph {
     
-    private var storage: GraphStorage<Node, Edge>
+    internal typealias Storage = GraphStorage<Node, Edge.Attribute>
+    
+    internal let directed: Bool
+    
+    private var storage: Storage
     
     public init(directed: Bool = true) {
-        self.storage = GraphStorage(directed: directed)
+        self.directed = directed
+        self.storage = GraphStorage()
     }
     
     public init<SN: Sequence, SE: Sequence>(directed: Bool = true, nodes: SN, edges: SE) where SN.Element == Node, SE.Element == Edge {
-        self.storage = GraphStorage(directed: directed)
+        self.directed = directed
+        self.storage = GraphStorage()
         
-        self.storage.add(nodes: nodes)
-        self.storage.add(edges: edges)
+        add(nodes)
+        add(edges)
     }
     
-    internal var directed: Bool {
-        storage.directed
+    internal var nodes: OptionalElementArray<Storage.Node> {
+        storage.nodes
     }
     
-    internal var allEdges: [GraphEdge] {
-        storage.allEdges.map { GraphEdge(index: $0.index, fromNodeIndex: $0.from, toNodeIndex: $0.to) }
+    internal var edges: OptionalElementArray<Storage.Edge> {
+        storage.edges
     }
     
-    public mutating func add(node: Node) {
+    public mutating func add(_ node: Node) {
         makeStorageUniqueIfNotUnique()
-        storage.add(node: node)
+        storage.add(node)
     }
 
-    public mutating func add<S: Sequence>(nodes: S) where S.Element == Node {
+    public mutating func add<S: Sequence>(_ nodes: S) where S.Element == Node {
         makeStorageUniqueIfNotUnique()
-        storage.add(nodes: nodes)
+        storage.add(nodes)
     }
     
-    internal func forEach(body: (Node, [InputEdge], [OutputEdge], NodeIndex, inout Bool) -> ()) {
-        storage.forEach(body: body)
+    internal subscript(index: NodeIndex) -> Storage.Node {
+        storage[index]
     }
-
-    internal subscript(nodeIndex: NodeIndex) -> Node {
-        storage[nodeIndex]
+    
+    internal subscript(node: Storage.Node) -> Node {
+        storage[node]
+    }
+    
+    internal func content(of index: NodeIndex) -> Node {
+        storage.content(of: index)
     }
 
     @discardableResult
@@ -81,49 +91,50 @@ public struct Graph {
     }
 
     @discardableResult
-    internal mutating func remove<S: Sequence>(nodesAt nodeIndices: S) -> ContiguousArray<Node> where S.Element == NodeIndex {
+    internal mutating func remove<S: Sequence>(at nodeIndices: S) -> ContiguousArray<Node> where S.Element == NodeIndex {
         makeStorageUniqueIfNotUnique()
         return storage.remove(nodesAt: nodeIndices)
     }
 
-    public mutating func add(edge: Edge) {
+    public mutating func add(_ edge: Edge) {
         makeStorageUniqueIfNotUnique()
-        storage.add(edge: edge)
+        storage.add(edge.attribute, from: edge.from, to: edge.to)
     }
 
-    public mutating func add<S: Sequence>(edges: S) where S.Element == Edge {
+    public mutating func add<S: Sequence>(_ edges: S) where S.Element == Edge {
         makeStorageUniqueIfNotUnique()
-        storage.add(edges: edges)
+        edges.forEach { add($0) }
     }
     
-    internal func edgeIndices(from: NodeIndex, to: NodeIndex) -> [EdgeIndex] {
-        storage.edgeIndices(from: from, to: to)
-    }
-
-    internal subscript(edgeIndex: EdgeIndex) -> Edge {
-        storage[edgeIndex]
+    
+    internal func edgeIndices(from: NodeIndex, to: NodeIndex) -> ContiguousArray<EdgeIndex> {
+        var result = ContiguousArray<EdgeIndex>()
+        for edge in edges where edge.from == from && edge.to == to {
+            result.append(edge.id)
+        }
+        return result
     }
     
-    internal func forEach(body: (Edge, EdgeIndex, inout Bool) -> ()) {
-        storage.forEach(body: body)
+    internal subscript(index: EdgeIndex) -> Storage.Edge {
+        storage[index]
     }
     
-    internal func inputEdges(for nodeIndex: NodeIndex) -> [InputEdge] {
-        storage.inputEdges(for: nodeIndex)
+    internal subscript(node: Storage.Edge) -> Edge.Attribute {
+        storage[node]
     }
     
-    internal func outputEdges(for nodeIndex: NodeIndex) -> [OutputEdge] {
-        storage.outputEdges(for: nodeIndex)
+    internal func content(of index: EdgeIndex) -> Edge.Attribute {
+        storage.content(of: index)
     }
-
+    
     @discardableResult
-    internal mutating func remove(at edgeIndex: EdgeIndex) -> Edge {
+    internal mutating func remove(at edgeIndex: EdgeIndex) -> Edge.Attribute {
         makeStorageUniqueIfNotUnique()
         return storage.remove(at: edgeIndex)
     }
 
     @discardableResult
-    internal mutating func remove<S: Sequence>(edgesAt edgeIndices: S) -> [Edge] where S.Element == EdgeIndex {
+    internal mutating func remove<S: Sequence>(at edgeIndices: S) -> ContiguousArray<Edge.Attribute> where S.Element == EdgeIndex {
         makeStorageUniqueIfNotUnique()
         return storage.remove(edgesAt: edgeIndices)
     }
@@ -135,7 +146,7 @@ public struct Graph {
     }
 
     private mutating func createdNewStorage() {
-        storage = storage._makeCopy()
+        storage = storage.makeCopy()
     }
     
 }

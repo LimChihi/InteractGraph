@@ -72,7 +72,7 @@ fileprivate typealias LevelElement = ViewElementGraph.ViewElement
 fileprivate func generateStorage(graph: Graph, focusNode: NodeIndex?) -> AdjacencyListGraph<ViewElementGraph.Element> {
     let layoutGraph = LayoutGraph(graph, focusNode: focusNode)
     var storage = convertNodeToViewElement(layoutGraph, graph: graph)
-    addEdgeElemetn(&storage, layoutGraph: layoutGraph, graph: graph)
+    addEdgeElement(&storage, layoutGraph: layoutGraph, graph: graph)
     return storage.flatCompactMap {
         $0.element
     }
@@ -104,7 +104,7 @@ fileprivate func convertNodeToViewElement(_ layoutGraph: LayoutGraph, graph: Gra
 }
 
 
-fileprivate func addEdgeElemetn(_ storage: inout AdjacencyListGraph<LevelElement>, layoutGraph: LayoutGraph, graph: Graph) {
+fileprivate func addEdgeElement(_ storage: inout AdjacencyListGraph<LevelElement>, layoutGraph: LayoutGraph, graph: Graph) {
     
     var nodePaths = layoutGraph.path
     storage.flatForEach { viewElement, indexPath, _ in
@@ -112,8 +112,8 @@ fileprivate func addEdgeElemetn(_ storage: inout AdjacencyListGraph<LevelElement
             return
         }
         
-        for outputIndex in graph.outputEdges(for: nodeIndex) {
-            if let releatedNodes = layoutGraph.releatedNodes, !releatedNodes.contains(outputIndex) {
+        for outputIndex in graph[nodeIndex].outputs {
+            if let relatedNodes = layoutGraph.relatedNodes, !relatedNodes.contains(outputIndex) {
                 continue
             }
             

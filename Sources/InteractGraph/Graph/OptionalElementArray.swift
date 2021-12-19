@@ -164,7 +164,7 @@ internal struct OptionalElementArray<Element>: RandomAccessCollection, RangeRepl
         .sorted(by: >)
         .forEach {
             emptySlots.insert($0.rawValue)
-            elements.remove(at: $0.rawValue)
+            elements[$0.rawValue] = nil
         }
     }
     

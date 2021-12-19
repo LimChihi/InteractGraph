@@ -26,7 +26,7 @@
 
 import SwiftUI
 
-public struct Edge: GraphStorageEdge, Hashable {
+public struct Edge: Hashable {
 
     public let from: Node.ID
     

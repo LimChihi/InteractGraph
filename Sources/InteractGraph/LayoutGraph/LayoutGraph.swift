@@ -31,22 +31,22 @@ internal struct LayoutGraph {
     
     internal let path: [NodeIndex: LayoutGraphIndexPath]
     
-    internal let releatedNodes: Set<NodeIndex>?
+    internal let relatedNodes: Set<NodeIndex>?
     
     internal init(_ graph: Graph, focusNode: NodeIndex? = nil) {
-        let releatedNodes = focusNode.map {
+        let relatedNodes = focusNode.map {
             filter(graph, focusNodeIndex: $0)
         }
-        var (layoutGraph, path) = longestPath(graph, releatedNodes: releatedNodes)
+        var (layoutGraph, path) = longestPath(graph, relatedNodes: relatedNodes)
         adjustEdgeWeight(&layoutGraph, path: &path, graph: graph)
         self.storage = layoutGraph
         self.path = path
-        self.releatedNodes = releatedNodes
+        self.relatedNodes = relatedNodes
     }
 
 }
 
-fileprivate func longestPath(_ graph: Graph, releatedNodes: Set<NodeIndex>?) -> (layoutGraph: AdjacencyListGraph<NodeIndex>, path: [NodeIndex: LayoutGraphIndexPath]) {
+fileprivate func longestPath(_ graph: Graph, relatedNodes: Set<NodeIndex>?) -> (layoutGraph: AdjacencyListGraph<NodeIndex>, path: [NodeIndex: LayoutGraphIndexPath]) {
     
     var path: [NodeIndex: LayoutGraphIndexPath] = [:]
     
@@ -54,22 +54,22 @@ fileprivate func longestPath(_ graph: Graph, releatedNodes: Set<NodeIndex>?) -> 
     
     var currentOutputEdge = Set<NodeIndex>()
     
-    graph.forEach { node, _, outputEdges, nodeIndex, _ in
-        if let releatedNodes = releatedNodes, !releatedNodes.contains(nodeIndex) {
-            return
+    for node in graph.nodes {
+        if let relatedNodes = relatedNodes, !relatedNodes.contains(node.id) {
+            continue
         }
         
         let indexPath: AdjacencyListIndexPath
-        if currentOutputEdge.contains(where: { nodeIndex == $0 } ) {
-            indexPath = layoutGraph.appendElementAtNewRow(nodeIndex)
+        if currentOutputEdge.contains(where: { node.id == $0 } ) {
+            indexPath = layoutGraph.appendElementAtNewRow(node.id)
             currentOutputEdge.removeAll()
         } else {
-            indexPath = layoutGraph.appendElementAtLast(nodeIndex)
+            indexPath = layoutGraph.appendElementAtLast(node.id)
         }
         
-        path[nodeIndex] = LayoutGraphIndexPath(indexPath)
+        path[node.id] = LayoutGraphIndexPath(indexPath)
         
-        outputEdges.forEach { currentOutputEdge.insert($0) }
+        node.outputs.forEach { currentOutputEdge.insert($0) }
     }
     
     return (layoutGraph, path)
@@ -78,15 +78,16 @@ fileprivate func longestPath(_ graph: Graph, releatedNodes: Set<NodeIndex>?) -> 
 
 fileprivate func filter(_ graph: Graph, focusNodeIndex: NodeIndex) -> Set<NodeIndex> {
     
-    var releatedNodes: Set<NodeIndex> = []
+    var relatedNodes: Set<NodeIndex> = []
     
     var stack: [NodeIndex] = [focusNodeIndex]
     
     // inputs
     while let nodeIndex = stack.popLast() {
-        releatedNodes.insert(nodeIndex)
-        for input in graph.inputEdges(for: nodeIndex) {
-            guard !releatedNodes.contains(where: { $0 == input }) &&
+        relatedNodes.insert(nodeIndex)
+        
+        for input in graph[nodeIndex].inputs {
+            guard !relatedNodes.contains(where: { $0 == input }) &&
                     !stack.contains(where: { $0 == input }) else {
                 continue
             }
@@ -97,10 +98,10 @@ fileprivate func filter(_ graph: Graph, focusNodeIndex: NodeIndex) -> Set<NodeIn
     // outputs
     stack = [focusNodeIndex]
     while let nodeIndex = stack.popLast() {
-        releatedNodes.insert(nodeIndex)
+        relatedNodes.insert(nodeIndex)
 
-        for output in graph.outputEdges(for: nodeIndex) {
-            guard !releatedNodes.contains(where: { $0 == output }) &&
+        for output in graph[nodeIndex].outputs {
+            guard !relatedNodes.contains(where: { $0 == output }) &&
                     !stack.contains(where: { $0 == output }) else {
                 continue
             }
@@ -109,7 +110,7 @@ fileprivate func filter(_ graph: Graph, focusNodeIndex: NodeIndex) -> Set<NodeIn
         }
     }
     
-    return releatedNodes
+    return relatedNodes
 }
 
 
@@ -126,7 +127,7 @@ fileprivate func adjustEdgeWeight(_ layoutGraph: inout AdjacencyListGraph<NodeIn
             .enumerated()
             .map { (levelIndex, nodeIndex) in
                 
-                let weight = graph.inputEdges(for: nodeIndex).reduce(0) { partialResult, input in
+                let weight = graph[nodeIndex].inputs.reduce(0) { partialResult, input in
                     partialResult + (path[input]?.level ?? 0)
                 }
                 return (levelIndex, weight)

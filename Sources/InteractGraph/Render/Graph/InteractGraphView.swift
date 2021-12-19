@@ -109,8 +109,8 @@ internal var test_data_graph: Graph {
         edges: [edge0, edge1, edge2, edge3, edge4, edge5]
     )
     
-    graph.add(edge: edge7)
-    graph.add(edge: edge6)
+    graph.add(edge7)
+    graph.add(edge6)
     
     return graph
 }

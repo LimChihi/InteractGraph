@@ -36,17 +36,18 @@ internal struct GraphEdgesView: View {
     }
     
     internal var body: some View {
-        ForEach(graph.allEdges) { edge in
-            if let originNode = elementFrames[.node(edge.fromNodeIndex)],
-               let destinationNode = elementFrames[.node(edge.toNodeIndex)] {
+        ForEach(graph.edges) { edge in
+            if let originNode = elementFrames[.node(edge.from)],
+               let destinationNode = elementFrames[.node(edge.to)] {
+                
                 let isTopDown = (originNode.minY - destinationNode.minY) < 0
                 let origin = isTopDown ? originNode.bottomCenter : originNode.topCenter
                 let destination = isTopDown ? destinationNode.topCenter : destinationNode.bottomCenter
-                let controlPoints = elementFrames.edgeAnchors(edge.index)
+                let controlPoints = elementFrames.edgeAnchors(edge.id)
                     .map { $0.center }
                     .sorted { isTopDown ?  $0.y < $1.y : $0.y > $1.y }
-                ArrawEdgeView(
-                    edge: graph[edge.index].attribute,
+                ArrowEdgeView(
+                    edge: edge.content,
                     directed: graph.directed,
                     origin: origin,
                     destination: destination,

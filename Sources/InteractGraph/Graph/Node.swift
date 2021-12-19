@@ -26,7 +26,7 @@
 
 import SwiftUI
 
-public struct Node: GraphStorageNode {
+public struct Node: Identifiable {
     
     public typealias ID = String
     

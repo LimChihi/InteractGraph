@@ -1,5 +1,5 @@
 //
-//  ArrawEdgeView.swift
+//  ArrowEdgeView.swift
 //  InteractGraph
 //
 //  Created by limchihi on 16/11/2021.
@@ -26,7 +26,7 @@
 
 import SwiftUI
 
-internal struct ArrawEdgeView: View {
+internal struct ArrowEdgeView: View {
     
     private let edge: Edge.Attribute
 
@@ -159,7 +159,7 @@ fileprivate let coefficient: CGFloat = 1.4
 struct EdgePathView_PreViews: PreviewProvider {
     
     static var previews: some View {
-        ArrawEdgeView(
+        ArrowEdgeView(
             edge: .init(color: .blue, dashed: false),
             directed: true,
             origin: .init(x: 200, y: 50),

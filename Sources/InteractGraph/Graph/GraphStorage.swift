@@ -26,104 +26,74 @@
 
 import Collections
 
-internal protocol GraphStorageEdge {
-    
-    associatedtype NodeID: Equatable
-    
-    var from: NodeID { get }
-    
-    var to: NodeID { get }
-    
-}
+internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
 
-
-internal protocol GraphStorageNode {
-    
-    associatedtype ID: Equatable
-    
-    var id: ID { get }
-    
-}
-
-
-internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: GraphStorageEdge> where NodeContent.ID == EdgeContent.NodeID {
-    
     internal typealias NodeIndex = TypeIndex<NodeContent>
     
     internal typealias EdgeIndex = TypeIndex<EdgeContent>
     
-    internal let directed: Bool
+    internal typealias InputEdge = NodeIndex
     
-    private var nodes: OptionalElementArray<Node<NodeContent>>
+    internal typealias OutputEdge = NodeIndex
     
-    private var edges: OptionalElementArray<Edge<EdgeContent>>
+    private var nodeContents: OptionalElementArray<NodeContent>
     
-    internal init(directed: Bool) {
-        self.directed = directed
+    private var edgeContents: OptionalElementArray<EdgeContent>
+    
+    internal private(set) var nodes: OptionalElementArray<Node>
+    
+    internal private(set) var edges: OptionalElementArray<Edge>
+    
+    internal init() {
+        self.nodeContents = []
+        self.edgeContents = []
         self.nodes = []
         self.edges = []
     }
     
-    private init(directed: Bool, nodes: OptionalElementArray<Node<NodeContent>>, edges: OptionalElementArray<Edge<EdgeContent>>) {
-        self.directed = directed
+    private init(nodeContents: OptionalElementArray<NodeContent>, edgeContents: OptionalElementArray<EdgeContent>, nodes: OptionalElementArray<GraphStorage<NodeContent, EdgeContent>.Node>, edges: OptionalElementArray<GraphStorage<NodeContent, EdgeContent>.Edge>) {
+        self.nodeContents = nodeContents
+        self.edgeContents = edgeContents
         self.nodes = nodes
         self.edges = edges
     }
-
-    internal func _makeCopy() -> GraphStorage {
-        GraphStorage(directed: directed, nodes: nodes, edges: edges)
+    
+    internal func makeCopy() -> GraphStorage {
+        GraphStorage(nodeContents: nodeContents, edgeContents: edgeContents, nodes: nodes, edges: edges)
     }
     
-//    internal var allEdges: [EdgeIndex] { }
-    
-    internal var allEdges: [(index: EdgeIndex, from: NodeIndex, to: NodeIndex)] {
-        var result: [(index: EdgeIndex, from: NodeIndex, to: NodeIndex)] = []
-        result.reserveCapacity(edges.count)
-        for index in edges.indices {
-            let edge = edges[index]
-            result.append((index.cast(), edge.fromNodeIndex, edge.toNodeIndex))
-        }
-        return result
-    }
     
     // MARK: - Node
     
-    @discardableResult
-    internal func add(node: NodeContent) -> NodeIndex {
-        nodes.append(Node(node)).cast()
-    }
+    // MARK: created
     
     @discardableResult
-    internal func add<S: Sequence>(nodes newNodes: S) -> ContiguousArray<NodeIndex> where S.Element == NodeContent {
-        var nodesIterator = newNodes.makeIterator()
-        var current = nodesIterator.next()
-        var indices: ContiguousArray<NodeIndex> = []
-        indices.reserveCapacity(nodes.underestimatedCount)
-        
-        while let node = current {
-            indices.append(nodes.append(Node(node)).cast())
-            current = nodesIterator.next()
-        }
-        
-        return indices
+    internal func add(_ content: NodeContent) -> NodeIndex {
+        let index = nodeContents.append(content)
+        nodes.append(Node(graph: self, id: index))
+        return index
     }
     
-    internal subscript(nodeIndex: NodeIndex) -> NodeContent {
-        nodes[nodeIndex.cast()].content
+    @discardableResult
+    internal func add<S: Sequence>(_ contents: S) -> ContiguousArray<NodeIndex> where S.Element == NodeContent {
+        ContiguousArray(contents.map { add($0) })
     }
     
-    internal func forEach(body: (NodeContent, [InputEdge], [OutputEdge], NodeIndex, inout Bool) -> ()) {
-        var stop = false
-        
-        for index in nodes.indices {
-            let node = nodes[index]
-            body(node.content, node.inputs, node.outputs, index.cast(), &stop)
-            if stop {
-                return
-            }
-        }
+    // MARK: read
+    
+    internal subscript(nodeIndex: NodeIndex) -> Node {
+        nodes[nodeIndex.cast()]
     }
     
+    internal subscript(node: Node) -> NodeContent {
+        content(of: node.id)
+    }
+    
+    internal func content(of index: NodeIndex) -> NodeContent {
+        nodeContents[index]
+    }
+    
+    // MARK: deleted
     @discardableResult
     internal func remove(at nodeIndex: NodeIndex) -> NodeContent {
         let node = nodes[nodeIndex.cast()]
@@ -136,141 +106,85 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
             removeNodeEdge(from: $0, to: nodeIndex)
         }
         
-        for index in edges.indices {
-            let edge = edges[index]
-            guard edge.fromNodeIndex == nodeIndex || edge.toNodeIndex == nodeIndex else {
+        for edge in edges {
+            guard edge.from == nodeIndex || edge.to == nodeIndex else {
                 continue
             }
-            edges.remove(at: index)
+            edges.remove(at: edge.id.cast())
+            edgeContents.remove(at: edge.id)
         }
         
         nodes.remove(at: nodeIndex.cast())
-        return node.content
+        let content = nodeContents.remove(at: nodeIndex)
+        return content
     }
     
     @discardableResult
     internal func remove<S: Sequence>(nodesAt nodeIndices: S) -> ContiguousArray<NodeContent> where S.Element == NodeIndex {
-        let deletedNodes = nodeIndices.map { remove(at: $0) }
-        return ContiguousArray(deletedNodes)
+        ContiguousArray(nodeIndices.map { remove(at: $0) })
     }
     
     // MARK: - Edge
+    // MARK: created
     
     @discardableResult
-    internal func add(edge: EdgeContent) -> EdgeIndex {
-        let edge = prepareGraphEdge(for: edge)
-        return edges.append(edge).cast()
-    }
-    
-    @discardableResult
-    internal func add<S: Sequence>(edges newEdges: S) -> ContiguousArray<EdgeIndex> where S.Element == EdgeContent {
-        var edgesIterator = newEdges.makeIterator()
-        var current = edgesIterator.next()
-        var indices: ContiguousArray<EdgeIndex> = []
-        indices.reserveCapacity(newEdges.underestimatedCount)
-        
-        while let edge = current {
-            indices.append(edges.append(prepareGraphEdge(for: edge)).cast())
-            current = edgesIterator.next()
+    internal func add(_ content: EdgeContent, from: NodeContent.ID, to: NodeContent.ID) -> EdgeIndex {
+        guard let (fromIndex, toIndex) = nodeIndices(id0: from, id1: to) else {
+            preconditionFailure("Nodes not found")
         }
-        
-        return indices
-    }
-    
-    internal func edgeIndices(from: NodeIndex, to: NodeIndex) -> [EdgeIndex] {
-        var result: [EdgeIndex] = []
-        for index in edges.indices {
-            let edge = edges[index]
-            guard edge.fromNodeIndex == from && edge.toNodeIndex == to else {
-                continue
-            }
-            
-            result.append(index.cast())
-        }
-        
-        return result
-    }
-    
-    internal subscript(edgeIndex: EdgeIndex) -> EdgeContent {
-        edges[edgeIndex.cast()].content
-    }
-    
-    internal func forEach(body: (EdgeContent, EdgeIndex, inout Bool) -> ()) {
-        var stop = false
-        for index in edges.indices {
-            let edge = edges[index]
-            body(edge.content, index.cast(), &stop)
-            if stop {
-                return
-            }
-        }
-    }
-    
-    internal func inputEdges(for nodeIndex: NodeIndex) -> [InputEdge] {
-        nodes[nodeIndex.cast()].inputs
-    }
-    
-    internal func outputEdges(for nodeIndex: NodeIndex) -> [OutputEdge] {
-        nodes[nodeIndex.cast()].outputs
+        return add(content, from: fromIndex, to: toIndex)
     }
     
     @discardableResult
-    internal func remove(at edgeIndex: EdgeIndex) -> EdgeContent {
-        let edge = edges[edgeIndex.cast()]
-        removeNodeEdge(from: edge.fromNodeIndex, to: edge.toNodeIndex)
-        edges.remove(at: edgeIndex.cast())
+    internal func add(_ content: EdgeContent, from: NodeIndex, to: NodeIndex) -> EdgeIndex {
         
-        return edge.content
+        nodes[from.cast()].outputs.append(to)
+        nodes[to.cast()].inputs.append(from)
+        
+        let index = edgeContents.append(content)
+        edges.append(Edge(graph: self, id: index, from: from, to: to))
+        return index
+    }
+    
+    // MARK: read
+    
+    internal subscript(edgeIndex: EdgeIndex) -> Edge {
+        edges[edgeIndex.cast()]
+    }
+    
+    internal subscript(edge: Edge) -> EdgeContent {
+        edgeContents[edge.id]
+    }
+    
+    internal func content(of index: EdgeIndex) -> EdgeContent {
+        edgeContents[index]
+    }
+    
+    // MARK: deleted
+    
+    @discardableResult
+    internal func remove(at index: EdgeIndex) -> EdgeContent {
+        let edge = edges[index.cast()]
+        removeNodeEdge(from: edge.from, to: edge.to)
+        edges.remove(at: index.cast())
+        let content = edgeContents.remove(at: index)
+        return content
     }
     
     @discardableResult
-    internal func remove<S: Sequence>(edgesAt edgeIndices: S) -> [EdgeContent] where S.Element == EdgeIndex {
-        edgeIndices.map { remove(at: $0) }
-    }
-    
-    // MARK: - Connected Graph
-    
-    internal func getConnectedSubgraphs() -> ContiguousArray<SubgraphStorage> {
-        var result = ContiguousArray<SubgraphStorage>()
-        var passByNode = Set<NodeIndex>()
-        
-        for index in nodes.indices {
-
-            guard !passByNode.contains(index.cast()) else {
-                continue
-            }
-            
-            let subgraph = SubgraphStorage(graph: self)
-            var queue: Deque<NodeIndex> = [index.cast()]
-            while let first = queue.popFirst() {
-                guard !passByNode.contains(index.cast()) else {
-                    continue
-                }
-                let node = nodes[first.cast()]
-                
-                queue.append(contentsOf: node.outputs.filter({ !passByNode.contains($0) }))
-                queue.append(contentsOf: node.inputs.filter({ !passByNode.contains($0) }))
-                passByNode.insert(index.cast())
-                subgraph.nodeIndices.append(index.cast())
-            }
-            
-            result.append(subgraph)
-            if passByNode.count == nodes.count {
-                break
-            }
-        }
-        return result
+    internal func remove<S: Sequence>(edgesAt edgeIndices: S) -> ContiguousArray<EdgeContent> where S.Element == EdgeIndex {
+        ContiguousArray(edgeIndices.map { remove(at: $0) })
     }
     
     // MARK: - helper
     
     private func removeNodeEdge(from: NodeIndex, to: NodeIndex) {
-        if let outputIndex = nodes[from.cast()].outputs.firstIndex(where: { $0 == to }) {
-            nodes[from.cast()].outputs.remove(at: outputIndex)
+        nodes[from.cast()].outputs.removeAll {
+            $0 == to
         }
         
-        if let inputIndex = nodes[to.cast()].inputs.firstIndex(where: { $0 == from }) {
-            nodes[to.cast()].inputs.remove(at: inputIndex)
+        nodes[to.cast()].inputs.removeAll {
+            $0 == from
         }
     }
     
@@ -278,9 +192,9 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
         var index0: NodeIndex?
         var index1: NodeIndex?
         
-        for index in nodes.indices {
-            let node = nodes[index]
-            if node.content.id == id0 {
+        for index in nodeContents.indices {
+            let node = nodeContents[index]
+            if node.id == id0 {
                 if let index1 = index1 {
                     return (index.cast(), index1)
                 } else {
@@ -289,7 +203,7 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
                 }
             }
             
-            if node.content.id == id1 {
+            if node.id == id1 {
                 if let index0 = index0 {
                     return (index0, index.cast())
                 } else {
@@ -302,50 +216,44 @@ internal final class GraphStorage<NodeContent: GraphStorageNode, EdgeContent: Gr
         return nil
     }
     
-    private func prepareGraphEdge(for edge: EdgeContent) -> Edge<EdgeContent> {
-        assert(edge.from != edge.to)
-        guard let (fromNodeIndex, toNodeIndex) = nodeIndices(id0: edge.from, id1: edge.to) else {
-            preconditionFailure("Nodes Not Found")
+    internal struct Node {
+        
+        fileprivate unowned let graph: GraphStorage
+        
+        internal let id: NodeIndex
+        
+        internal fileprivate(set) var inputs: ContiguousArray<InputEdge>
+        
+        internal fileprivate(set) var outputs: ContiguousArray<OutputEdge>
+        
+        internal init(graph: GraphStorage, id: NodeIndex, inputs: ContiguousArray<InputEdge> = [], outputs: ContiguousArray<OutputEdge> = []) {
+            self.graph = graph
+            self.id = id
+            self.inputs = inputs
+            self.outputs = outputs
         }
         
-        nodes[fromNodeIndex.cast()].outputs.append(toNodeIndex)
-        nodes[toNodeIndex.cast()].inputs.append(fromNodeIndex)
-        return Edge(fromNodeIndex: fromNodeIndex, toNodeIndex: toNodeIndex, content: edge)
-    }
-    
-}
-
-
-extension GraphStorage {
-    
-    internal typealias InputEdge = NodeIndex
-    
-    internal typealias OutputEdge = NodeIndex
-    
-    private struct Node<Content> {
-        
-        internal var inputs: [InputEdge]
-        
-        internal var outputs: [OutputEdge]
-        
-        internal let content: Content
-        
-        internal init(_ content: Content) {
-            self.inputs = []
-            self.outputs = []
-            self.content = content
+        @inlinable
+        internal var content: NodeContent {
+            graph.content(of: id)
         }
         
     }
     
-    private struct Edge<Content> {
+    internal struct Edge: Identifiable {
         
-        internal let fromNodeIndex: NodeIndex
+        fileprivate unowned let graph: GraphStorage
         
-        internal let toNodeIndex: NodeIndex
+        internal let id: EdgeIndex
         
-        internal let content: Content
+        internal fileprivate(set) var from: NodeIndex
         
+        internal fileprivate(set) var to: NodeIndex
+        
+        @inlinable
+        internal var content: EdgeContent {
+            graph.content(of: id)
+        }
     }
     
 }
