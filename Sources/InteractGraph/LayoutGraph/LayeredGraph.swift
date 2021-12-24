@@ -40,6 +40,14 @@ internal struct LayeredGraph {
         self.root = graph.nodes.first { $0.inputs.isEmpty }.map { $0.id } ?? graph.nodes.first!.id
     }
     
+    internal func slack(of edge: Graph.Storage.Edge) -> Int? {
+        guard let toRank = layeredInfos[edge.to.cast()].rank,
+                let fromRank = layeredInfos[edge.from.cast()].rank else {
+            return nil
+        }
+        return toRank - fromRank
+    }
+    
     struct Info {
         
         let id: NodeIndex
@@ -133,6 +141,51 @@ fileprivate func longestPath(_ layeredGraph: inout LayeredGraph) {
     _ = dfs(layeredGraph.root)
     
 }
+
+
+fileprivate func feasibleTree(_ layeredGraph: inout LayeredGraph) {
+    var tightNodes: Set<NodeIndex> = [layeredGraph.root]
+    
+    func tight() -> Int {
+        var queue: [NodeIndex] = [layeredGraph.graph.nodes.first!.id]
+        while let node = queue.popLast() {
+            guard !tightNodes.contains(node) else {
+                continue
+            }
+            let outputs = layeredGraph.graph[node].outputs
+            let nodeRank = layeredGraph.layeredInfos[node.cast()].rank!
+            for output in outputs {
+                if layeredGraph.layeredInfos[output.cast()].rank! - nodeRank == 1 {
+                    tightNodes.insert(output)
+                    queue.append(output)
+                }
+            }
+        }
+        
+        return tightNodes.count
+    }
+    
+    func minSlackEdge() -> Graph.Storage.Edge {
+        layeredGraph.graph.edges.minimum { edge -> Int? in
+            guard tightNodes.contains(edge.from) != tightNodes.contains(edge.to) else {
+                return nil
+            }
+            return layeredGraph.slack(of: edge)
+        }!
+    }
+    
+    while tight() < layeredGraph.graph.nodes.count {
+        let edge = minSlackEdge()
+        let slack = layeredGraph.slack(of: edge)!
+        if tightNodes.contains(edge.from) {
+            layeredGraph.layeredInfos[edge.to.cast()].rank! -= slack
+        } else {
+            layeredGraph.layeredInfos[edge.from.cast()].rank! += slack
+        }
+    }
+    
+}
+
 
 fileprivate func networkSimplex(_ layeredGraph: inout LayeredGraph) {
     longestPath(&layeredGraph)

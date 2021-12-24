@@ -44,6 +44,7 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
     
     internal private(set) var edges: OptionalElementArray<Edge>
     
+    @inlinable
     internal init() {
         self.nodeContents = []
         self.edgeContents = []
@@ -58,6 +59,7 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
         self.edges = edges
     }
     
+    @inlinable
     internal func makeCopy() -> GraphStorage {
         GraphStorage(nodeContents: nodeContents, edgeContents: edgeContents, nodes: nodes, edges: edges)
     }
@@ -67,6 +69,7 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
     
     // MARK: created
     
+    @inlinable
     @discardableResult
     internal func add(_ content: NodeContent) -> NodeIndex {
         let index = nodeContents.append(content)
@@ -74,6 +77,7 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
         return index
     }
     
+    @inlinable
     @discardableResult
     internal func add<S: Sequence>(_ contents: S) -> ContiguousArray<NodeIndex> where S.Element == NodeContent {
         ContiguousArray(contents.map { add($0) })
@@ -81,19 +85,24 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
     
     // MARK: read
     
+    @inlinable
     internal subscript(nodeIndex: NodeIndex) -> Node {
         nodes[nodeIndex.cast()]
     }
     
+    @inlinable
     internal subscript(node: Node) -> NodeContent {
         content(of: node.id)
     }
     
+    @inlinable
     internal func content(of index: NodeIndex) -> NodeContent {
         nodeContents[index]
     }
     
     // MARK: deleted
+    
+    @inlinable
     @discardableResult
     internal func remove(at nodeIndex: NodeIndex) -> NodeContent {
         let node = nodes[nodeIndex.cast()]
@@ -119,6 +128,7 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
         return content
     }
     
+    @inlinable
     @discardableResult
     internal func remove<S: Sequence>(nodesAt nodeIndices: S) -> ContiguousArray<NodeContent> where S.Element == NodeIndex {
         ContiguousArray(nodeIndices.map { remove(at: $0) })
@@ -127,6 +137,7 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
     // MARK: - Edge
     // MARK: created
     
+    @inlinable
     @discardableResult
     internal func add(_ content: EdgeContent, from: NodeContent.ID, to: NodeContent.ID) -> EdgeIndex {
         guard let (fromIndex, toIndex) = nodeIndices(id0: from, id1: to) else {
@@ -135,6 +146,7 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
         return add(content, from: fromIndex, to: toIndex)
     }
     
+    @inlinable
     @discardableResult
     internal func add(_ content: EdgeContent, from: NodeIndex, to: NodeIndex) -> EdgeIndex {
         
@@ -148,20 +160,24 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
     
     // MARK: read
     
+    @inlinable
     internal subscript(edgeIndex: EdgeIndex) -> Edge {
         edges[edgeIndex.cast()]
     }
     
+    @inlinable
     internal subscript(edge: Edge) -> EdgeContent {
         edgeContents[edge.id]
     }
     
+    @inlinable
     internal func content(of index: EdgeIndex) -> EdgeContent {
         edgeContents[index]
     }
     
     // MARK: deleted
     
+    @inlinable
     @discardableResult
     internal func remove(at index: EdgeIndex) -> EdgeContent {
         let edge = edges[index.cast()]
@@ -171,6 +187,7 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
         return content
     }
     
+    @inlinable
     @discardableResult
     internal func remove<S: Sequence>(edgesAt edgeIndices: S) -> ContiguousArray<EdgeContent> where S.Element == EdgeIndex {
         ContiguousArray(edgeIndices.map { remove(at: $0) })
@@ -226,6 +243,7 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
         
         internal fileprivate(set) var outputs: ContiguousArray<OutputEdge>
         
+        @inlinable
         internal init(graph: GraphStorage, id: NodeIndex, inputs: ContiguousArray<InputEdge> = [], outputs: ContiguousArray<OutputEdge> = []) {
             self.graph = graph
             self.id = id
@@ -238,6 +256,7 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
             graph.content(of: id)
         }
         
+        @inlinable
         static func == (lhs: GraphStorage<NodeContent, EdgeContent>.Node, rhs: GraphStorage<NodeContent, EdgeContent>.Node) -> Bool {
             lhs.graph === lhs.graph && lhs.id == rhs.id
         }
@@ -259,6 +278,7 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
             graph.content(of: id)
         }
         
+        @inlinable
         static func == (lhs: GraphStorage<NodeContent, EdgeContent>.Edge, rhs: GraphStorage<NodeContent, EdgeContent>.Edge) -> Bool {
             lhs.graph === lhs.graph && lhs.id == rhs.id
         }
@@ -359,6 +379,8 @@ extension KeyedDecodingContainer {
 
 
 extension GraphStorage: Equatable {
+    
+    @inlinable
     static func == (lhs: GraphStorage<NodeContent, EdgeContent>, rhs: GraphStorage<NodeContent, EdgeContent>) -> Bool {
         if lhs === rhs {
             return true

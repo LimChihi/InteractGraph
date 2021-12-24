@@ -210,7 +210,6 @@ internal struct OptionalElementArray<Element>: RandomAccessCollection, RangeRepl
         try indices.filter {
             try shouldBeRemoved(self[$0])
         }
-        .sorted(by: >)
         .forEach {
             emptySlots.insert($0.rawValue)
             elements[$0.rawValue] = nil
