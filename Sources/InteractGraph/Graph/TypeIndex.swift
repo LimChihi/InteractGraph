@@ -25,7 +25,7 @@
 //  THE SOFTWARE.
 
 
-internal struct TypeIndex<T>: RawInitable, ExpressibleByIntegerLiteral, Hashable, Identifiable, Comparable {
+internal struct TypeIndex<T>: RawInitable, ExpressibleByIntegerLiteral, Hashable, Identifiable, Comparable, Codable {
     
     internal let rawValue: Int
     

@@ -246,9 +246,9 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
         
         internal let id: EdgeIndex
         
-        internal fileprivate(set) var from: NodeIndex
+        internal let from: NodeIndex
         
-        internal fileprivate(set) var to: NodeIndex
+        internal let to: NodeIndex
         
         @inlinable
         internal var content: EdgeContent {
@@ -256,4 +256,94 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
         }
     }
     
+}
+
+
+extension GraphStorage: Codable where NodeContent: Codable, EdgeContent: Codable {
+    
+    private struct CodableNode: Codable {
+        
+        internal let inputs: ContiguousArray<InputEdge>
+        
+        internal let outputs: ContiguousArray<OutputEdge>
+        
+        internal init(_ node: Node) {
+            self.inputs = node.inputs
+            self.outputs = node.outputs
+        }
+        
+    }
+    
+    private struct CodableEdge: Codable {
+        
+        internal let from: NodeIndex
+        
+        internal let to: NodeIndex
+        
+        internal init(_ edge: Edge) {
+            self.from = edge.from
+            self.to = edge.to
+        }
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        
+        case nodes
+        
+        case nodeContents
+        
+        case edges
+        
+        case edgeContents
+        
+    }
+    
+    internal convenience init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        self.init(
+            nodeContents: try container.decode(for: .nodeContents),
+            edgeContents: try container.decode(for: .edgeContents),
+            nodes: [],
+            edges: []
+        )
+        
+        let codableNodes = try container.decode(
+            OptionalElementArray<CodableNode>.self,
+            forKey: .nodes
+        )
+        let codableEdges = try container.decode(
+            OptionalElementArray<CodableEdge>.self,
+            forKey: .edges
+        )
+        
+        self.nodes = codableNodes.map { element, index in
+            element.map {
+                Node(graph: self, id: NodeIndex(index.rawValue), inputs: $0.inputs, outputs: $0.outputs)
+            }
+        }
+        
+        self.edges = codableEdges.map { element, index in
+            element.map {
+                Edge(graph: self, id: EdgeIndex(index.rawValue), from: $0.from, to: $0.to)
+            }
+        }
+    }
+    
+    internal func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(nodeContents, forKey: .nodeContents)
+        try container.encode(edgeContents, forKey: .edgeContents)
+        try container.encode(nodes.map { CodableNode($0) }, forKey: .nodes)
+        try container.encode(edges.map { CodableEdge($0) }, forKey: .edges)
+    }
+}
+
+extension KeyedDecodingContainer {
+    
+    @inlinable
+    internal func decode<T>(for key: KeyedDecodingContainer<K>.Key) throws -> T where T : Decodable {
+        try decode(T.self, forKey: key)
+    }
+
 }

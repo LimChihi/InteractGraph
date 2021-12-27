@@ -42,9 +42,15 @@ internal struct OptionalElementArray<Element>: RandomAccessCollection, RangeRepl
     }
     
     @inlinable
-    init(arrayLiteral elements: Element...) {
+    internal init(arrayLiteral elements: Element...) {
         self.elements = ContiguousArray(elements)
         self.emptySlots = []
+    }
+    
+    @inline(__always)
+    private init(elements: ContiguousArray<Element?>, emptySlots: Set<Int>) {
+        self.elements = elements
+        self.emptySlots = emptySlots
     }
     
     @inlinable
@@ -120,6 +126,44 @@ internal struct OptionalElementArray<Element>: RandomAccessCollection, RangeRepl
     internal func replaceSubrange<C>(_ subrange: Range<TypeIndex<Element>>, with newElements: C) where C : Collection, Element == C.Element {
         fatalError()
     }
+    
+    @inlinable
+    internal func map<T>(_ transform: (Element?) throws -> T?) rethrows -> OptionalElementArray<T> {
+        var newElements: ContiguousArray<T?> = []
+        newElements.reserveCapacity(elements.count)
+        var newEmptySlots: Set<Int> = []
+        newEmptySlots.reserveCapacity(emptySlots.count)
+        
+        for index in elements.indices {
+            let newElement = try transform(elements[index])
+            if newElement == nil {
+                newEmptySlots.insert(index)
+            }
+            newElements.append(newElement)
+        }
+        
+        return OptionalElementArray<T>(elements: newElements, emptySlots: newEmptySlots)
+    }
+    
+    
+    @inlinable
+    internal func map<T>(_ transform: (Element?, Index) throws -> T?) rethrows -> OptionalElementArray<T> {
+        var newElements: ContiguousArray<T?> = []
+        newElements.reserveCapacity(elements.count)
+        var newEmptySlots: Set<Int> = []
+        newEmptySlots.reserveCapacity(emptySlots.count)
+        
+        for index in elements.indices {
+            let newElement = try transform(elements[index], Index(index))
+            if newElement == nil {
+                newEmptySlots.insert(index)
+            }
+            newElements.append(newElement)
+        }
+        
+        return OptionalElementArray<T>(elements: newElements, emptySlots: newEmptySlots)
+    }
+
     
     @inlinable
     internal func removeFirst() -> Element {
@@ -199,4 +243,8 @@ internal struct OptionalElementArray<Element>: RandomAccessCollection, RangeRepl
         }
         return index
     }
+}
+
+extension OptionalElementArray: Codable where Element: Codable {
+    
 }
