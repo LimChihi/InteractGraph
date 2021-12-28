@@ -73,18 +73,3 @@ extension Edge: Identifiable {
     }
     
 }
-
-
-internal struct GraphEdge: Identifiable, Hashable {
-    
-    internal let index: EdgeIndex
-    
-    internal let fromNodeIndex: NodeIndex
-    
-    internal let toNodeIndex: NodeIndex
-    
-    internal var id: Self {
-        self
-    }
-    
-}

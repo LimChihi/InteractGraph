@@ -24,21 +24,49 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
    
+import Collections
+
+internal struct LayeredGraph {
+
+    internal var graph: Graph
+    
+    internal var layeredInfos: OptionalElementArray<Info>
+    
+    internal let root: NodeIndex
+    
+    internal init(graph: Graph) {
+        self.graph = graph
+        self.layeredInfos = graph.nodes.map { $0.map { Info(id: $0.id) }}
+        self.root = graph.nodes.first { $0.inputs.isEmpty }.map { $0.id } ?? graph.nodes.first!.id
+    }
+    
+    struct Info {
+        
+        let id: NodeIndex
+        
+        var rank: Int?
+        
+        var level: Int?
+    }
+    
+}
 
 fileprivate func layout(_ graph: Graph) {
-    
-    var graph = graph
+    guard !graph.nodes.isEmpty else {
+        return
+    }
+    var graph = LayeredGraph(graph: graph)
     removeSelfEdges(&graph)
     acyclic(&graph)
     
 }
 
-fileprivate func removeSelfEdges(_ graph: inout Graph) {
-    let indices = graph.edges.filter { $0.from == $0.to }.map { $0.id }
-    graph.remove(at: indices)
+fileprivate func removeSelfEdges(_ layeredGraph: inout LayeredGraph) {
+    let indices = layeredGraph.graph.edges.filter { $0.from == $0.to }.map { $0.id }
+    layeredGraph.graph.remove(at: indices)
 }
     
-fileprivate func acyclic(_ graph: inout Graph) {
+fileprivate func acyclic(_ layeredGraph: inout LayeredGraph) {
     
     /// *O(m)* m is the count of edges
     /// - Returns: Edges that need to remove
@@ -55,16 +83,16 @@ fileprivate func acyclic(_ graph: inout Graph) {
         
         var stack: [NodeIndex] = []
         
-        for currentNode in graph.nodes {
+        for currentNode in layeredGraph.graph.nodes {
             guard !visited.contains(currentNode.id) else {
                 continue
             }
             stack = [currentNode.id]
             while let node = stack.popLast() {
                 visited.insert(node)
-                for output in graph[node].outputs {
+                for output in layeredGraph.graph[node].outputs {
                     if visited.contains(output) {
-                        result.append(contentsOf: graph.edgeIndices(from: node, to: output))
+                        result.append(contentsOf: layeredGraph.graph.edgeIndices(from: node, to: output))
                     } else {
                         visited.insert(output)
                         stack.append(output)
@@ -76,15 +104,44 @@ fileprivate func acyclic(_ graph: inout Graph) {
         return result
     }
     
-    // FIXME: implemented greedy 
+    // FIXME: implemented greedy
 //    let edges = graph.storage.edgesCount > graph.storage.nodesCount * graph.storage.nodesCount ? dfs() : greedy()
     let edges = dfs()
-    graph.remove(at: edges)
+    layeredGraph.graph.remove(at: edges)
+}
+
+
+fileprivate func longestPath(_ layeredGraph: inout LayeredGraph) {
+    
+    var visited: Set<NodeIndex> = []
+    visited.reserveCapacity(layeredGraph.graph.nodes.count)
+    
+    func dfs(_ index: NodeIndex) -> Int {
+        guard !visited.contains(index) else {
+            return layeredGraph.layeredInfos[index.cast()].rank!
+        }
+        visited.insert(index)
+        
+        let outputRanks = layeredGraph.graph[index].outputs.map {
+            dfs($0) - 1
+        }
+        let rank = outputRanks.min() ?? 0
+        layeredGraph.layeredInfos[index.cast()].rank = rank
+        return rank
+    }
+    
+    _ = dfs(layeredGraph.root)
+    
+}
+
+fileprivate func networkSimplex(_ layeredGraph: inout LayeredGraph) {
+    longestPath(&layeredGraph)
+    fatalError()
 }
 
 #if DEBUG
 
-internal func fileprivate_removeSelfEdges(_ graph: inout Graph) {
+internal func fileprivate_removeSelfEdges(_ graph: inout LayeredGraph) {
     removeSelfEdges(&graph)
 }
 
