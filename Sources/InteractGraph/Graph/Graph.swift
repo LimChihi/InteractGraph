@@ -33,7 +33,7 @@ internal typealias InputEdge = NodeIndex
 
 internal typealias OutputEdge = NodeIndex
 
-public struct Graph {
+public struct Graph: Equatable {
     
     internal typealias Storage = GraphStorage<Node, Edge.Attribute>
     

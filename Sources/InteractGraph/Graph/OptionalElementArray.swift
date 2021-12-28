@@ -90,6 +90,11 @@ internal struct OptionalElementArray<Element>: RandomAccessCollection, RangeRepl
     }
     
     @inlinable
+    internal func isEmptySlot(_ slot: Index) -> Bool {
+        emptySlots.contains(slot.rawValue)
+    }
+    
+    @inlinable
     @discardableResult
     internal mutating func append(_ newElement: Element) -> Index {
         if let index = emptySlots.popFirst() {

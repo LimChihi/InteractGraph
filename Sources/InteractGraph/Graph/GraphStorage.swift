@@ -216,7 +216,7 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
         return nil
     }
     
-    internal struct Node {
+    internal struct Node: Equatable {
         
         fileprivate unowned let graph: GraphStorage
         
@@ -238,10 +238,14 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
             graph.content(of: id)
         }
         
+        static func == (lhs: GraphStorage<NodeContent, EdgeContent>.Node, rhs: GraphStorage<NodeContent, EdgeContent>.Node) -> Bool {
+            lhs.graph === lhs.graph && lhs.id == rhs.id
+        }
+        
     }
     
-    internal struct Edge: Identifiable {
-        
+    internal struct Edge: Identifiable, Equatable {
+
         fileprivate unowned let graph: GraphStorage
         
         internal let id: EdgeIndex
@@ -253,6 +257,10 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
         @inlinable
         internal var content: EdgeContent {
             graph.content(of: id)
+        }
+        
+        static func == (lhs: GraphStorage<NodeContent, EdgeContent>.Edge, rhs: GraphStorage<NodeContent, EdgeContent>.Edge) -> Bool {
+            lhs.graph === lhs.graph && lhs.id == rhs.id
         }
     }
     
@@ -339,6 +347,7 @@ extension GraphStorage: Codable where NodeContent: Codable, EdgeContent: Codable
     }
 }
 
+
 extension KeyedDecodingContainer {
     
     @inlinable
@@ -346,4 +355,38 @@ extension KeyedDecodingContainer {
         try decode(T.self, forKey: key)
     }
 
+}
+
+
+extension GraphStorage: Equatable {
+    static func == (lhs: GraphStorage<NodeContent, EdgeContent>, rhs: GraphStorage<NodeContent, EdgeContent>) -> Bool {
+        if lhs === rhs {
+            return true
+        }
+        
+        guard lhs.nodes.count == rhs.nodes.count && lhs.edges.count == rhs.edges.count else {
+            return false
+        }
+        
+        for i in lhs.nodes.indices {
+            guard !rhs.nodes.isEmptySlot(i) else {
+                return false
+            }
+            if lhs.nodes[i] != rhs.nodes[i] {
+                return false
+            }
+        }
+        
+        for i in lhs.edges.indices {
+            guard !rhs.edges.isEmptySlot(i) else {
+                return false
+            }
+            
+            if lhs.edges[i] != rhs.edges[i] {
+                return false
+            }
+        }
+        
+        return true
+    }
 }
