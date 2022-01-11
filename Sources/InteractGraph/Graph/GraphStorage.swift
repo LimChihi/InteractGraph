@@ -36,14 +36,15 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
     
     internal typealias OutputEdge = NodeIndex
     
-    private var nodeContents: OptionalElementArray<NodeContent>
+    internal private(set) var nodeContents: OptionalElementArray<NodeContent>
     
-    private var edgeContents: OptionalElementArray<EdgeContent>
+    internal private(set) var edgeContents: OptionalElementArray<EdgeContent>
     
     internal private(set) var nodes: OptionalElementArray<Node>
     
     internal private(set) var edges: OptionalElementArray<Edge>
     
+    @inline(__always)
     internal init() {
         self.nodeContents = []
         self.edgeContents = []
@@ -51,6 +52,7 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
         self.edges = []
     }
     
+    @inline(__always)
     private init(nodeContents: OptionalElementArray<NodeContent>, edgeContents: OptionalElementArray<EdgeContent>, nodes: OptionalElementArray<GraphStorage<NodeContent, EdgeContent>.Node>, edges: OptionalElementArray<GraphStorage<NodeContent, EdgeContent>.Edge>) {
         self.nodeContents = nodeContents
         self.edgeContents = edgeContents
@@ -58,15 +60,48 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
         self.edges = edges
     }
     
+    @inlinable
     internal func makeCopy() -> GraphStorage {
         GraphStorage(nodeContents: nodeContents, edgeContents: edgeContents, nodes: nodes, edges: edges)
     }
     
+    internal func map<N, E>(nodeTransform: (NodeContent) throws -> (N), edgeTransform: (EdgeContent) throws -> (E)) rethrows -> GraphStorage<N, E> {
+        typealias Storage = GraphStorage<N, E>
+        
+        let storage = Storage(
+            nodeContents: try nodeContents.map { try $0.map { try nodeTransform($0) } },
+            edgeContents: try edgeContents.map { try $0.map { try edgeTransform($0) } },
+            nodes: [],
+            edges: []
+        )
+        
+        storage.nodes = nodes.map { (e: Node?) -> Storage.Node? in
+            guard let e = e else {
+                return nil
+            }
+            return Storage.Node(
+                graph: storage,
+                id: e.id.cast(),
+                inputs: unsafeBitCast(e.inputs, to: ContiguousArray<Storage.InputEdge>.self),
+                outputs: unsafeBitCast(e.outputs, to: ContiguousArray<Storage.OutputEdge>.self)
+            )
+        }
+        
+        storage.edges = edges.map { (e: Edge?) -> Storage.Edge? in
+            guard let e = e else {
+                return nil
+            }
+            return Storage.Edge(graph: storage, id: e.id.cast(), from: e.from.cast(), to: e.to.cast())
+        }
+        
+        return storage
+    }
     
     // MARK: - Node
     
     // MARK: created
     
+    @inlinable
     @discardableResult
     internal func add(_ content: NodeContent) -> NodeIndex {
         let index = nodeContents.append(content)
@@ -74,26 +109,32 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
         return index
     }
     
+    @inlinable
     @discardableResult
     internal func add<S: Sequence>(_ contents: S) -> ContiguousArray<NodeIndex> where S.Element == NodeContent {
         ContiguousArray(contents.map { add($0) })
     }
     
-    // MARK: read
+    // MARK: retrieved
     
+    @inlinable
     internal subscript(nodeIndex: NodeIndex) -> Node {
         nodes[nodeIndex.cast()]
     }
     
+    @inlinable
     internal subscript(node: Node) -> NodeContent {
         content(of: node.id)
     }
     
+    @inlinable
     internal func content(of index: NodeIndex) -> NodeContent {
         nodeContents[index]
     }
     
     // MARK: deleted
+    
+    @inlinable
     @discardableResult
     internal func remove(at nodeIndex: NodeIndex) -> NodeContent {
         let node = nodes[nodeIndex.cast()]
@@ -119,6 +160,7 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
         return content
     }
     
+    @inlinable
     @discardableResult
     internal func remove<S: Sequence>(nodesAt nodeIndices: S) -> ContiguousArray<NodeContent> where S.Element == NodeIndex {
         ContiguousArray(nodeIndices.map { remove(at: $0) })
@@ -127,6 +169,7 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
     // MARK: - Edge
     // MARK: created
     
+    @inlinable
     @discardableResult
     internal func add(_ content: EdgeContent, from: NodeContent.ID, to: NodeContent.ID) -> EdgeIndex {
         guard let (fromIndex, toIndex) = nodeIndices(id0: from, id1: to) else {
@@ -135,9 +178,9 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
         return add(content, from: fromIndex, to: toIndex)
     }
     
+    @inlinable
     @discardableResult
     internal func add(_ content: EdgeContent, from: NodeIndex, to: NodeIndex) -> EdgeIndex {
-        
         nodes[from.cast()].outputs.append(to)
         nodes[to.cast()].inputs.append(from)
         
@@ -148,20 +191,24 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
     
     // MARK: read
     
+    @inlinable
     internal subscript(edgeIndex: EdgeIndex) -> Edge {
         edges[edgeIndex.cast()]
     }
     
+    @inlinable
     internal subscript(edge: Edge) -> EdgeContent {
         edgeContents[edge.id]
     }
     
+    @inlinable
     internal func content(of index: EdgeIndex) -> EdgeContent {
         edgeContents[index]
     }
     
     // MARK: deleted
     
+    @inlinable
     @discardableResult
     internal func remove(at index: EdgeIndex) -> EdgeContent {
         let edge = edges[index.cast()]
@@ -171,6 +218,7 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
         return content
     }
     
+    @inlinable
     @discardableResult
     internal func remove<S: Sequence>(edgesAt edgeIndices: S) -> ContiguousArray<EdgeContent> where S.Element == EdgeIndex {
         ContiguousArray(edgeIndices.map { remove(at: $0) })
@@ -222,10 +270,13 @@ internal final class GraphStorage<NodeContent: Identifiable, EdgeContent> {
         
         internal let id: NodeIndex
         
+        @nonobjc
         internal fileprivate(set) var inputs: ContiguousArray<InputEdge>
         
+        @nonobjc
         internal fileprivate(set) var outputs: ContiguousArray<OutputEdge>
         
+        @inlinable
         internal init(graph: GraphStorage, id: NodeIndex, inputs: ContiguousArray<InputEdge> = [], outputs: ContiguousArray<OutputEdge> = []) {
             self.graph = graph
             self.id = id
@@ -267,6 +318,7 @@ extension GraphStorage: Codable where NodeContent: Codable, EdgeContent: Codable
         
         internal let outputs: ContiguousArray<OutputEdge>
         
+        @inlinable
         internal init(_ node: Node) {
             self.inputs = node.inputs
             self.outputs = node.outputs
@@ -280,6 +332,7 @@ extension GraphStorage: Codable where NodeContent: Codable, EdgeContent: Codable
         
         internal let to: NodeIndex
         
+        @inlinable
         internal init(_ edge: Edge) {
             self.from = edge.from
             self.to = edge.to

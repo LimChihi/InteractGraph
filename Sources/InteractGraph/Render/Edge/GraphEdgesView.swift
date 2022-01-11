@@ -47,7 +47,7 @@ internal struct GraphEdgesView: View {
                     .map { $0.center }
                     .sorted { isTopDown ?  $0.y < $1.y : $0.y > $1.y }
                 ArrowEdgeView(
-                    edge: edge.content,
+                    edge: edge.content.attribute,
                     directed: graph.directed,
                     origin: origin,
                     destination: destination,

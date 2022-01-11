@@ -25,9 +25,9 @@
 //  THE SOFTWARE.
 
 
-internal typealias NodeIndex = GraphStorage<Node, Edge.Attribute>.NodeIndex
+internal typealias NodeIndex = GraphStorage<Node, Edge>.NodeIndex
 
-internal typealias EdgeIndex = GraphStorage<Node, Edge.Attribute>.EdgeIndex
+internal typealias EdgeIndex = GraphStorage<Node, Edge>.EdgeIndex
 
 internal typealias InputEdge = NodeIndex
 
@@ -35,7 +35,7 @@ internal typealias OutputEdge = NodeIndex
 
 public struct Graph {
     
-    internal typealias Storage = GraphStorage<Node, Edge.Attribute>
+    internal typealias Storage = GraphStorage<Node, Edge>
     
     internal let directed: Bool
     
@@ -60,6 +60,10 @@ public struct Graph {
     
     internal var edges: OptionalElementArray<Storage.Edge> {
         storage.edges
+    }
+    
+    internal func map<N, E>(nodeTransform: (Node) throws -> (N), edgeTransform: (Edge) throws -> (E)) rethrows -> GraphStorage<N, E> {
+        try storage.map(nodeTransform: nodeTransform, edgeTransform: edgeTransform)
     }
     
     public mutating func add(_ node: Node) {
@@ -98,14 +102,13 @@ public struct Graph {
 
     public mutating func add(_ edge: Edge) {
         makeStorageUniqueIfNotUnique()
-        storage.add(edge.attribute, from: edge.from, to: edge.to)
+        storage.add(edge, from: edge.from, to: edge.to)
     }
 
     public mutating func add<S: Sequence>(_ edges: S) where S.Element == Edge {
         makeStorageUniqueIfNotUnique()
         edges.forEach { add($0) }
     }
-    
     
     internal func edgeIndices(from: NodeIndex, to: NodeIndex) -> ContiguousArray<EdgeIndex> {
         var result = ContiguousArray<EdgeIndex>()
@@ -119,22 +122,22 @@ public struct Graph {
         storage[index]
     }
     
-    internal subscript(node: Storage.Edge) -> Edge.Attribute {
+    internal subscript(node: Storage.Edge) -> Edge {
         storage[node]
     }
     
-    internal func content(of index: EdgeIndex) -> Edge.Attribute {
+    internal func content(of index: EdgeIndex) -> Edge {
         storage.content(of: index)
     }
     
     @discardableResult
-    internal mutating func remove(at edgeIndex: EdgeIndex) -> Edge.Attribute {
+    internal mutating func remove(at edgeIndex: EdgeIndex) -> Edge {
         makeStorageUniqueIfNotUnique()
         return storage.remove(at: edgeIndex)
     }
 
     @discardableResult
-    internal mutating func remove<S: Sequence>(at edgeIndices: S) -> ContiguousArray<Edge.Attribute> where S.Element == EdgeIndex {
+    internal mutating func remove<S: Sequence>(at edgeIndices: S) -> ContiguousArray<Edge> where S.Element == EdgeIndex {
         makeStorageUniqueIfNotUnique()
         return storage.remove(edgesAt: edgeIndices)
     }

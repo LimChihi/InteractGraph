@@ -46,6 +46,12 @@ public struct Edge: Hashable {
         self.attribute = Attribute(color: color, dashed: dashed)
     }
     
+    internal init(from: Node.ID, to: Node.ID, attribute: Attribute) {
+        self.from = from
+        self.to = to
+        self.attribute = attribute
+    }
+    
     internal struct Attribute: Hashable {
         
         internal let color: Color?
