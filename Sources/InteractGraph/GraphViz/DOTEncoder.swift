@@ -24,28 +24,20 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-
 internal struct DOTEncoder {
     
-    private let graph: Graph
-    
-    internal init(_ graph: Graph) {
-        self.graph = graph
-    }
-    
-    internal func encode() -> String {
+    internal static func encode(_ viewGraph: ViewGraph.Storage, directed: Bool) -> String {
         var lines: [String] = []
         
         do {
-            var firstLine: String
+//            var firstLine: String
             /*
             if graph.strict {
-                components.append("strict")
+                firstLine.append("strict")
             }
              */
             
-            firstLine = graph.directed ? "digraph" : "graph"
-            firstLine.append(" {")
+            let firstLine = directed ? "digraph {" : "graph {"
             lines.append(firstLine)
         }
         
@@ -53,8 +45,7 @@ internal struct DOTEncoder {
         lines.append(contentsOf: encodeSubgraph())
          */
         
-        lines.append(contentsOf: encodeNodes())
-
+        lines.append(contentsOf: encodeNodes(viewGraph, directed: directed))
         
         lines.append("}")
         
@@ -65,18 +56,18 @@ internal struct DOTEncoder {
         fatalError()
     }
     
-    private func encodeNodes() -> [String] {
+    private static func encodeNodes(_ viewGraph: ViewGraph.Storage, directed: Bool) -> [String] {
         
         var lines: [String] = []
-        lines.reserveCapacity(graph.nodes.count)
+        lines.reserveCapacity(viewGraph.nodes.count + viewGraph.edges.count)
         
-        let edgeString = graph.directed ? "->" : "--"
-        for node in graph.nodes {
+        let edgeString = directed ? "->" : "--"
+        for node in viewGraph.nodes {
             let content = node.content
             
             lines.append("\"\(content.id)\"[label=\"\(content.attribute.label)\"]")
             for output in node.outputs {
-                let outputID = graph[output].content.id
+                let outputID = viewGraph[output].content.id
                 // TODO: edge label
                 // [label="laalalalalla"]
                 lines.append("\"\(content.id)\" \(edgeString) \"\(outputID)\"")
